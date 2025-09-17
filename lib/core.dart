@@ -1,0 +1,13 @@
+export 'core/api/_api.dart';
+export 'core/data/_data.dart';
+export 'core/debug.dart';
+export 'core/ds/_xds.dart';
+export 'core/extensions/_extensions.dart';
+export 'core/manager/_manager.dart';
+export 'core/navigator_key.dart';
+export 'core/services/_services.dart';
+export 'core/utils/_utils.dart';
+export 'core/widgets/_widgets.dart';
+export 'core/x_app.dart';
+export 'core/x_app_config.dart';
+export 'core/x_debug.dart';
