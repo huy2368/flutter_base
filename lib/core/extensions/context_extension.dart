@@ -1,7 +1,6 @@
 import 'package:core/core/utils/x_ui_consts.dart';
 import 'package:flutter/material.dart';
 
-import '../ds/_xds.dart';
 import '../navigator_key.dart';
 import 'mediaquerydata_extension.dart';
 
@@ -69,87 +68,147 @@ extension ContextExtension on BuildContext {
   TextTheme get xtextTheme => xTheme.textTheme;
   InputDecorationThemeData get xinputTheme => xTheme.inputDecorationTheme;
 
-  /// mega title: 57
-  TextStyle get displayL => xtextTheme.displayLarge!;
+  /// mega title: 64
+  TextStyle get displayL {
+    final style = xtextTheme.displayLarge!;
+    final fontSize = sw(
+      style.fontSize!,
+    ).clamp(style.fontSize! - 2, style.fontSize! + 2);
+    return style.copyWith(fontSize: fontSize);
+  }
 
-  /// super title: 45
-  TextStyle get displayM => xtextTheme.displayMedium!;
+  /// super title: 40
+  TextStyle get displayM {
+    final style = xtextTheme.displayMedium!;
+    final fontSize = sw(
+      style.fontSize!,
+    ).clamp(style.fontSize! - 2, style.fontSize! + 2);
+    return style.copyWith(fontSize: fontSize);
+  }
 
-  /// title: 36
-  TextStyle get displayS => xtextTheme.displaySmall!;
+  /// title: 24
+  TextStyle get displayS {
+    final style = xtextTheme.displaySmall!;
+    final fontSize = sw(
+      style.fontSize!,
+    ).clamp(style.fontSize! - 2, style.fontSize! + 2);
+    return style.copyWith(fontSize: fontSize);
+  }
 
-  /// heading1: 30
-  TextStyle get headlineL => xtextTheme.headlineLarge!;
+  /// heading1: 32
+  TextStyle get headlineL {
+    final style = xtextTheme.headlineLarge!;
+    final fontSize = sw(
+      style.fontSize!,
+    ).clamp(style.fontSize! - 2, style.fontSize! + 2);
+    return style.copyWith(fontSize: fontSize);
+  }
 
-  /// heading1: 30
-  TextStyle get headlineM => xtextTheme.headlineMedium!;
+  /// heading1: 24
+  TextStyle get headlineM {
+    final style = xtextTheme.headlineMedium!;
+    final fontSize = sw(
+      style.fontSize!,
+    ).clamp(style.fontSize! - 2, style.fontSize! + 2);
+    return style.copyWith(fontSize: fontSize);
+  }
 
-  /// heading2: 24
-  TextStyle get headlineS => xtextTheme.headlineSmall!;
+  /// heading2: 20
+  TextStyle get headlineS {
+    final style = xtextTheme.headlineSmall!;
+    final fontSize = sw(
+      style.fontSize!,
+    ).clamp(style.fontSize! - 2, style.fontSize! + 2);
+    return style.copyWith(fontSize: fontSize);
+  }
 
   /// heading3: 20
-  TextStyle get titleL => xtextTheme.titleLarge!;
+  TextStyle get titleL {
+    final style = xtextTheme.titleLarge!;
+    final fontSize = sw(
+      style.fontSize!,
+    ).clamp(style.fontSize! - 1, style.fontSize! + 1);
+    return style.copyWith(fontSize: fontSize);
+  }
 
   /// bodyL: 16
-  TextStyle get titleM => xtextTheme.titleMedium!;
+  TextStyle get titleM {
+    final style = xtextTheme.titleMedium!;
+    final fontSize = sw(
+      style.fontSize!,
+    ).clamp(style.fontSize! - 1, style.fontSize! + 1);
+    return style.copyWith(fontSize: fontSize);
+  }
 
   /// bodyM: 14
-  TextStyle get titleS => xtextTheme.titleSmall!;
-
-  /// body: 16 bold
-  TextStyle get bodyLB => xtextTheme.bodyLarge!.bold;
-
-  /// body: 14 bold
-  TextStyle get bodyMB => xtextTheme.bodyMedium!.bold;
-
-  /// body: 12 bold
-  TextStyle get bodySB => xtextTheme.bodySmall!.bold;
-
-  /// body: 16, medium
-  TextStyle get bodyLM => xtextTheme.bodyLarge!.medium;
-
-  /// body: 14, medium
-  TextStyle get bodyMM => xtextTheme.bodyMedium!.medium;
-
-  /// body: 12, medium
-  TextStyle get bodySM => xtextTheme.bodySmall!.medium;
-
-  /// body: 16, extra bold
-  TextStyle get bodyLeB => xtextTheme.bodyLarge!.extraBold;
-
-  /// body: 14, extra bold
-  TextStyle get bodyMeB => xtextTheme.bodyMedium!.extraBold;
-
-  /// body: 12, extra bold
-  TextStyle get bodySeB => xtextTheme.bodySmall!.extraBold;
-
-  /// body: 16, link
-  TextStyle get bodyLlink => xtextTheme.bodyLarge!;
-
-  /// body: 14, link
-  TextStyle get bodyMlink => xtextTheme.bodyMedium!;
-
-  /// small body: 12, link
-  TextStyle get bodySlink => xtextTheme.bodySmall!;
+  TextStyle get titleS {
+    final style = xtextTheme.titleSmall!;
+    final fontSize = sw(
+      style.fontSize!,
+    ).clamp(style.fontSize! - 1, style.fontSize! + 1);
+    return style.copyWith(fontSize: fontSize);
+  }
 
   /// body: 16
-  TextStyle get bodyL => xtextTheme.bodyLarge!;
+  TextStyle get bodyL {
+    final style = xtextTheme.bodyLarge!;
+    final fontSize = sw(
+      style.fontSize!,
+    ).clamp(style.fontSize! - 1, style.fontSize! + 1);
+    return style.copyWith(fontSize: fontSize);
+  }
 
   /// small body: 14
-  TextStyle get bodyM => xtextTheme.bodyMedium!;
+  TextStyle get bodyM {
+    final style = xtextTheme.bodyMedium!;
+    final fontSize = sw(
+      style.fontSize!,
+    ).clamp(style.fontSize! - 1, style.fontSize! + 1);
+    return style.copyWith(fontSize: fontSize);
+  }
 
   /// small body: 14
-  TextStyle get bodyS => xtextTheme.bodySmall!;
+  TextStyle get bodyS {
+    final style = xtextTheme.bodySmall!;
+    final fontSize = sw(
+      style.fontSize!,
+    ).clamp(style.fontSize! - 1, style.fontSize! + 1);
+    return style.copyWith(fontSize: fontSize);
+  }
 
   /// small cap: 13
-  TextStyle get labelL => xtextTheme.labelLarge!;
+  TextStyle get labelL {
+    final style = xtextTheme.labelLarge!;
+    final fontSize = sw(
+      style.fontSize!,
+    ).clamp(style.fontSize! - 1, style.fontSize! + 1);
+    return style.copyWith(fontSize: fontSize);
+  }
 
   /// small cap: 12
-  TextStyle get labelM => xtextTheme.labelMedium!;
+  TextStyle get labelM {
+    final style = xtextTheme.labelMedium!;
+    final fontSize = sw(
+      style.fontSize!,
+    ).clamp(style.fontSize! - 1, style.fontSize! + 1);
+    return style.copyWith(fontSize: fontSize);
+  }
 
   /// small cap: 11
-  TextStyle get labelS => xtextTheme.labelSmall!;
+  TextStyle get labelS {
+    final style = xtextTheme.labelSmall!;
+    final fontSize = sw(
+      style.fontSize!,
+    ).clamp(style.fontSize! - 1, style.fontSize! + 1);
+    return style.copyWith(fontSize: fontSize);
+  }
 
   /// small cap: 10
-  TextStyle get labelXS => xtextTheme.labelSmall!;
+  TextStyle get labelXS {
+    final style = xtextTheme.labelSmall!;
+    final fontSize = sw(
+      style.fontSize!,
+    ).clamp(style.fontSize! - 1, style.fontSize! + 1);
+    return style.copyWith(fontSize: fontSize);
+  }
 }
