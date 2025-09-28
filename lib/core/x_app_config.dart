@@ -31,12 +31,12 @@ class _Config {
   static const baseUrl = 'BASE_URL';
 
   static Map<String, dynamic> devConstants = {
-    webUrl: 'https://v2.mini-ielts.com',
+    webUrl: 'https://pte.ftinfra.com',
     baseUrl: 'https://pte-api.ftinfra.com',
   };
 
   static Map<String, dynamic> prodConstants = {
-    webUrl: 'https://v2.mini-ielts.com',
+    webUrl: 'https://pte.ftinfra.com',
     baseUrl: 'https://pte-api.ftinfra.com',
   };
 }

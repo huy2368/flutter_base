@@ -6,8 +6,11 @@ class XUIConsts {
   static const double mdHMargin = 32; // horizontal tablet margin
   static const double lgHMargin = 94; // horizontal desktop margin
   static const Size smDesignSize = Size(390, 844); // mobile
+  static final double smContentWidth = smDesignSize.width - smHMargin * 2;
   static const Size mdDesignSize = Size(810, 1080); // tablet
+  static final double mdContentWidth = mdDesignSize.width - mdHMargin * 2;
   static const Size lgDesignSize = Size(1440, 1024); // desktop
+  static final double lgContentWidth = lgDesignSize.width - lgHMargin * 2;
 
   static final _phoneFontSize = 13.0;
   static final _tabletFontSize = 16.0;

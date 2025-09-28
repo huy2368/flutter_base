@@ -46,7 +46,7 @@ extension OpacityExt on Color {
 
   Color get o7 => withValues(alpha: 0.7);
 
-  Color get o8 => withValues(alpha: 0.8);
+  Color get o80 => withValues(alpha: 0.8);
 
   Color get o9 => withValues(alpha: 0.9);
 }

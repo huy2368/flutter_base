@@ -16,6 +16,14 @@ extension TextDecorationExt on TextStyle {
   TextStyle get lineThrough => copyWith(decoration: TextDecoration.lineThrough);
 }
 
+extension TextStyleHeightExt on TextStyle {
+  TextStyle get height1 => copyWith(height: 1.0);
+
+  TextStyle get height125 => copyWith(height: 1.2);
+
+  TextStyle get height15 => copyWith(height: 1.5);
+}
+
 extension FontStyleExt on TextStyle {
   TextStyle get italic => copyWith(fontStyle: FontStyle.italic);
 }
