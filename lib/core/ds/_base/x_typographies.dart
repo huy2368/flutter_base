@@ -19,7 +19,9 @@ extension TextDecorationExt on TextStyle {
 extension TextStyleHeightExt on TextStyle {
   TextStyle get height1 => copyWith(height: 1.0);
 
-  TextStyle get height125 => copyWith(height: 1.2);
+  TextStyle get height12 => copyWith(height: 1.2);
+
+  TextStyle get height125 => copyWith(height: 1.25);
 
   TextStyle get height15 => copyWith(height: 1.5);
 }

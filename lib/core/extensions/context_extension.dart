@@ -86,7 +86,7 @@ extension ContextExtension on BuildContext {
     return style.copyWith(fontSize: fontSize);
   }
 
-  /// title: 24
+  /// title: 36
   TextStyle get displayS {
     final style = xtextTheme.displaySmall!;
     final fontSize = sw(

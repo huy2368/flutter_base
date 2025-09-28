@@ -7,6 +7,7 @@ export 'x_future_widget.dart';
 export 'x_html.dart';
 export 'x_image_picker.dart';
 export 'x_image_picker_bottom_sheet.dart';
+export 'x_linear_gradient_text.dart';
 export 'x_loading_overlay.dart';
 export 'x_locale_widget.dart';
 export 'x_modal_bottom_sheet.dart';
