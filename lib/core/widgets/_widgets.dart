@@ -15,3 +15,4 @@ export 'x_pull_widget.dart';
 export 'x_shimmer.dart';
 export 'x_touchable_widget.dart';
 export 'x_web_view.dart';
+export 'x_uniform_height_gridview.dart';

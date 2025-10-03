@@ -123,113 +123,6 @@ extension ContextExtension on BuildContext {
     return style.copyWith(fontSize: fontSize);
   }
 
-  /// heading3: 20
-  //TextStyle get titleL {
-  //  final style = xtextTheme.titleLarge!;
-  //  final fontSize = sw(
-  //    style.fontSize!,
-  //  ).clamp(style.fontSize! - 1, style.fontSize! + 1);
-  //  return style.copyWith(fontSize: fontSize);
-  //}
-
-  ///// bodyL: 16
-  //TextStyle get titleM {
-  //  final style = xtextTheme.titleMedium!;
-  //  final fontSize = sw(
-  //    style.fontSize!,
-  //  ).clamp(style.fontSize! - 1, style.fontSize! + 1);
-  //  return style.copyWith(fontSize: fontSize);
-  //}
-
-  ///// bodyM: 14
-  //TextStyle get titleS {
-  //  final style = xtextTheme.titleSmall!;
-  //  final fontSize = sw(
-  //    style.fontSize!,
-  //  ).clamp(style.fontSize! - 1, style.fontSize! + 1);
-  //  return style.copyWith(fontSize: fontSize);
-  //}
-
-  ///// body: 16
-  //TextStyle get bodyL {
-  //  final style = xtextTheme.bodyLarge!;
-  //  final fontSize = sw(
-  //    style.fontSize!,
-  //  ).clamp(style.fontSize! - 1, style.fontSize! + 1);
-  //  return style.copyWith(fontSize: fontSize);
-  //}
-
-  ///// small body: 14
-  //TextStyle get bodyM {
-  //  final style = xtextTheme.bodyMedium!;
-  //  final fontSize = sw(
-  //    style.fontSize!,
-  //  ).clamp(style.fontSize! - 1, style.fontSize! + 1);
-  //  return style.copyWith(fontSize: fontSize);
-  //}
-
-  ///// small body: 14
-  //TextStyle get bodyS {
-  //  final style = xtextTheme.bodySmall!;
-  //  final fontSize = sw(
-  //    style.fontSize!,
-  //  ).clamp(style.fontSize! - 1, style.fontSize! + 1);
-  //  return style.copyWith(fontSize: fontSize);
-  //}
-
-  ///// small cap: 13
-  //TextStyle get labelL {
-  //  final style = xtextTheme.labelLarge!;
-  //  final fontSize = sw(
-  //    style.fontSize!,
-  //  ).clamp(style.fontSize! - 1, style.fontSize! + 1);
-  //  return style.copyWith(fontSize: fontSize);
-  //}
-
-  ///// small cap: 12
-  //TextStyle get labelM {
-  //  final style = xtextTheme.labelMedium!;
-  //  final fontSize = sw(
-  //    style.fontSize!,
-  //  ).clamp(style.fontSize! - 1, style.fontSize! + 1);
-  //  return style.copyWith(fontSize: fontSize);
-  //}
-
-  ///// small cap: 11
-  //TextStyle get labelS {
-  //  final style = xtextTheme.labelSmall!;
-  //  final fontSize = sw(
-  //    style.fontSize!,
-  //  ).clamp(style.fontSize! - 1, style.fontSize! + 1);
-  //  return style.copyWith(fontSize: fontSize);
-  //}
-
-  ///// small cap: 10
-  //TextStyle get labelXS {
-  //  final style = xtextTheme.labelSmall!;
-  //  final fontSize = sw(
-  //    style.fontSize!,
-  //  ).clamp(style.fontSize! - 1, style.fontSize! + 1);
-  //  return style.copyWith(fontSize: fontSize);
-  //}
-  /// 22-24, 32-32
-  //TextStyle get displayLarge => xtextTheme.displayLarge!;
-
-  ///// mobile: 22-24, other: 32-32
-  //TextStyle get displayMedium => xtextTheme.displayMedium!;
-
-  ///// mobile: 22-24, other: 32-32
-  //TextStyle get displaySmall => xtextTheme.displaySmall!;
-
-  ///// mobile:22-24, other: 32-32
-  //TextStyle get headlineLarge => xtextTheme.headlineLarge!;
-
-  ///// mobile: 22-24, other: 32-32
-  //TextStyle get headlineMedium => xtextTheme.headlineMedium!;
-
-  ///// mobile: 22-24, other: 32-32
-  //TextStyle get headlineSmall => xtextTheme.headlineSmall!;
-
   /// mobile: 18-20, other: 24-26
   TextStyle get titleL => xtextTheme.titleLarge!;
 
@@ -245,7 +138,7 @@ extension ContextExtension on BuildContext {
   /// mobile: 14-16, other: 18-20
   TextStyle get bodyM => xtextTheme.bodyMedium!;
 
-  /// mobile: 14-14, other: 16-16
+  /// mobile: 14-16, other: 16-18
   TextStyle get bodyS => xtextTheme.bodySmall!;
 
   /// mobile: 14-14, other: 16-16
