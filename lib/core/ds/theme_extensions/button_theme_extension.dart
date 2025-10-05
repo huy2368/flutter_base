@@ -12,22 +12,10 @@ class ButtonThemeExtension extends ThemeExtension<ButtonThemeExtension> {
   const ButtonThemeExtension({
     this.showLoading = false,
     this.loadingWidget,
-    this.heights = const {
-      EWidgetSize.small: 32.0,
-      EWidgetSize.medium: 40.0,
-      EWidgetSize.large: 48.0,
-    },
-    this.paddings = const {
-      EWidgetSize.small: EdgeInsets.symmetric(horizontal: 8),
-      EWidgetSize.medium: EdgeInsets.symmetric(horizontal: 16),
-      EWidgetSize.large: EdgeInsets.symmetric(horizontal: 24),
-    },
+    this.heights = const {},
+    this.paddings = const {},
     this.shapes = const {},
-    this.fontSizes = const {
-      EWidgetSize.small: 12.0,
-      EWidgetSize.medium: 14.0,
-      EWidgetSize.large: 16.0,
-    },
+    this.fontSizes = const {},
   });
 
   @override

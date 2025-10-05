@@ -58,6 +58,7 @@ dependencies:
   easy_debounce:
   package_info_plus:
   device_info_plus:
+  os_detect: ^2.0.3
 
 dev_dependencies:
   flutter_test:

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' show min;
 
+import 'package:core/core.dart' show XLog;
 import 'package:core/core/ds/consts/enums.dart';
 import 'package:core/core/ds/consts/widget_size.dart';
 import 'package:core/core/ds/theme_extensions/button_theme_extension.dart';
@@ -232,7 +233,9 @@ class _XButtonState extends State<XButton> {
           ? WidgetStateProperty.all(themePadding)
           : null,
       shape: themeShape != null ? WidgetStateProperty.all(themeShape) : null,
-      minimumSize: themeHeight != null
+      minimumSize: widget.size != null
+          ? WidgetStateProperty.all(Size(0, widget.size!.height))
+          : themeHeight != null
           ? WidgetStateProperty.all(
               Size(
                 themeStyle?.minimumSize?.resolve({})?.width ?? 0,
@@ -243,7 +246,9 @@ class _XButtonState extends State<XButton> {
       fixedSize: widget.size != null
           ? WidgetStateProperty.all(widget.size)
           : null,
-      maximumSize: themeHeight != null
+      maximumSize: widget.size != null
+          ? WidgetStateProperty.all(Size(double.infinity, widget.size!.height))
+          : themeHeight != null
           ? WidgetStateProperty.all(
               Size(
                 themeStyle?.maximumSize?.resolve({})?.width ?? 0,
@@ -263,6 +268,9 @@ class _XButtonState extends State<XButton> {
     final textStyle = effectiveStyle.textStyle
         ?.resolve({})
         ?.copyWith(fontSize: themeFontSize);
+    XLog.t(
+      'effectiveStyle 2: ${effectiveStyle.padding}  ${widget.size} ${effectiveStyle.minimumSize} ${effectiveStyle.maximumSize} ${effectiveStyle.fixedSize} ${effectiveStyle.fixedSize}',
+    );
     return effectiveStyle.copyWith(
       textStyle: WidgetStateProperty.all(textStyle),
       // text button prefer text style color from foreground color instead of textStyle color

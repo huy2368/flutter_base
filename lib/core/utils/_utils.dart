@@ -6,6 +6,7 @@ export 'x_constants.dart';
 export 'x_device.dart';
 export 'x_device_utils.dart';
 export 'x_log.dart';
+export 'x_platform.dart';
 export 'x_recorder.dart';
 export 'x_regex.dart';
 export 'x_scroll_utils.dart';

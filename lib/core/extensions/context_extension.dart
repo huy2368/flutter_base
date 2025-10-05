@@ -1,3 +1,4 @@
+import 'package:core/core.dart' show XLog, XPlatform;
 import 'package:core/core/utils/x_ui_consts.dart';
 import 'package:flutter/material.dart';
 
@@ -31,18 +32,10 @@ extension ContextExtensionMediaQuery on BuildContext {
   bool get xisKeyboardVisible => xkeyboardHeight > 0;
 
   double get xmargin {
-    if (xisDesktop) {
-      return ((xawidth / XUIConsts.lgDesignSize.width) * XUIConsts.lgHMargin)
-          .clamp(XUIConsts.mdHMargin, XUIConsts.lgHMargin);
-    } else if (xisTablet) {
-      return ((xawidth / XUIConsts.mdDesignSize.width) * XUIConsts.mdHMargin)
-          .clamp(
-            xheight < 600 ? XUIConsts.smHMargin : XUIConsts.mdHMargin,
-            xheight < 600 ? XUIConsts.mdHMargin : XUIConsts.lgHMargin,
-          );
+    if (XPlatform.isAndroid || XPlatform.isIOS) {
+      return xlerp(min: 16, max: xisPortrait ? 32 : 64);
     }
-    return ((xawidth / XUIConsts.smDesignSize.width) * XUIConsts.smHMargin)
-        .clamp(XUIConsts.smHMargin, XUIConsts.mdHMargin);
+    return xlerp(min: 16, max: 94);
   }
 
   double get xlmargin => xmargin;
@@ -61,6 +54,60 @@ extension ContextExtensionMediaQuery on BuildContext {
 
   double sw(num width) => width * xwidth / xdesignWidth;
   double sh(num height) => height * xheight / xdesignHeight;
+  double xlerp({
+    required double min,
+    required double max,
+    double? width,
+    double minWidth = 375,
+    double maxWidth = 1252,
+  }) {
+    if (min == max) return min;
+
+    final w = width ?? xwidth;
+    final result =
+        min +
+        (max - min) * ((w - minWidth) / (maxWidth - minWidth)).clamp(0, 1);
+    XLog.t(
+      'ContextExtension lerp $min $max $minWidth $maxWidth w: $w => $result',
+    );
+    return result;
+  }
+
+  SizedBox xvgap({
+    required double min,
+    required double max,
+    double? width,
+    double minWidth = 375,
+    double maxWidth = 1252,
+  }) {
+    return SizedBox(
+      height: xlerp(
+        min: min,
+        max: max,
+        width: width,
+        minWidth: minWidth,
+        maxWidth: maxWidth,
+      ),
+    );
+  }
+
+  SizedBox xhgap({
+    required double min,
+    required double max,
+    double? width,
+    double minWidth = 375,
+    double maxWidth = 1252,
+  }) {
+    return SizedBox(
+      width: xlerp(
+        min: min,
+        max: max,
+        width: width,
+        minWidth: minWidth,
+        maxWidth: maxWidth,
+      ),
+    );
+  }
 }
 
 extension ContextExtension on BuildContext {
@@ -69,84 +116,48 @@ extension ContextExtension on BuildContext {
   TextTheme get xtextTheme => xTheme.textTheme;
   InputDecorationThemeData get xinputTheme => xTheme.inputDecorationTheme;
 
-  /// mega title: 64
-  TextStyle get displayL {
-    final style = xtextTheme.displayLarge!;
-    final fontSize = sw(
-      style.fontSize!,
-    ).clamp(style.fontSize! - 2, style.fontSize! + 2);
-    return style.copyWith(fontSize: fontSize);
-  }
+  /// 64
+  TextStyle get displayL => xtextTheme.displayLarge!;
 
-  /// super title: 40
-  TextStyle get displayM {
-    final style = xtextTheme.displayMedium!;
-    final fontSize = sw(
-      style.fontSize!,
-    ).clamp(style.fontSize! - 2, style.fontSize! + 2);
-    return style.copyWith(fontSize: fontSize);
-  }
+  /// 40
+  TextStyle get displayM => xtextTheme.displayMedium!;
 
-  /// title: 36
-  TextStyle get displayS {
-    final style = xtextTheme.displaySmall!;
-    final fontSize = sw(
-      style.fontSize!,
-    ).clamp(style.fontSize! - 2, style.fontSize! + 2);
-    return style.copyWith(fontSize: fontSize);
-  }
+  /// 36
+  TextStyle get displayS => xtextTheme.displaySmall!;
 
-  /// heading1: 32
-  TextStyle get headlineL {
-    final style = xtextTheme.headlineLarge!;
-    final fontSize = sw(
-      style.fontSize!,
-    ).clamp(style.fontSize! - 2, style.fontSize! + 2);
-    return style.copyWith(fontSize: fontSize);
-  }
+  /// 32
+  TextStyle get headlineL => xtextTheme.headlineLarge!;
 
-  /// heading1: 24
-  TextStyle get headlineM {
-    final style = xtextTheme.headlineMedium!;
-    final fontSize = sw(
-      style.fontSize!,
-    ).clamp(style.fontSize! - 2, style.fontSize! + 2);
-    return style.copyWith(fontSize: fontSize);
-  }
+  /// 24
+  TextStyle get headlineM => xtextTheme.headlineMedium!;
 
-  /// heading2: 20
-  TextStyle get headlineS {
-    final style = xtextTheme.headlineSmall!;
-    final fontSize = sw(
-      style.fontSize!,
-    ).clamp(style.fontSize! - 2, style.fontSize! + 2);
-    return style.copyWith(fontSize: fontSize);
-  }
+  /// 20
+  TextStyle get headlineS => xtextTheme.headlineSmall!;
 
-  /// mobile: 18-20, other: 24-26
+  /// 20-24
   TextStyle get titleL => xtextTheme.titleLarge!;
 
-  /// mobile: 16-18, other: 20-22
+  /// 18-22
   TextStyle get titleM => xtextTheme.titleMedium!;
 
-  /// mobile: 16-18, other: 18-20
+  /// 16-20
   TextStyle get titleS => xtextTheme.titleSmall!;
 
-  /// mobile: 14-16, other: 18-20
+  /// 16-20
   TextStyle get bodyL => xtextTheme.bodyLarge!;
 
-  /// mobile: 14-16, other: 18-20
+  /// 16-18
   TextStyle get bodyM => xtextTheme.bodyMedium!;
 
-  /// mobile: 14-16, other: 16-18
+  /// 14-16
   TextStyle get bodyS => xtextTheme.bodySmall!;
 
-  /// mobile: 14-14, other: 16-16
+  /// 13-15
   TextStyle get labelL => xtextTheme.labelLarge!;
 
-  /// mobile: 14-14, other: 16-16
+  /// 12-14
   TextStyle get labelM => xtextTheme.labelMedium!;
 
-  /// mobile: 12-12, other: 14-14
+  /// 11-13
   TextStyle get labelS => xtextTheme.labelSmall!;
 }

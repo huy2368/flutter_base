@@ -11,6 +11,8 @@ class XUniformHeightGridView extends StatefulWidget {
   final double crossAxisSpacing;
   final bool isScrollable;
   final bool shrinkWrap;
+  final Widget? trailing;
+  final double? trailingWidth;
 
   const XUniformHeightGridView({
     super.key,
@@ -20,6 +22,8 @@ class XUniformHeightGridView extends StatefulWidget {
     this.crossAxisSpacing = 8.0,
     this.isScrollable = false,
     this.shrinkWrap = false,
+    this.trailing,
+    this.trailingWidth,
   });
 
   @override
@@ -31,6 +35,8 @@ class _XUniformHeightGridViewState extends State<XUniformHeightGridView> {
   List<GlobalKey> _keys = [];
   // The calculated max height of all children.
   double? _maxHeight;
+  // Retry counter for measurement
+  int _measurementRetries = 0;
 
   @override
   void initState() {
@@ -43,19 +49,33 @@ class _XUniformHeightGridViewState extends State<XUniformHeightGridView> {
 
   void _measureItems() {
     double maxHeight = 0;
+    int validMeasurements = 0;
+
     for (var key in _keys) {
       final renderBox = key.currentContext?.findRenderObject() as RenderBox?;
-      if (renderBox != null) {
-        maxHeight = max(maxHeight, renderBox.size.height);
+      if (renderBox != null && renderBox.hasSize) {
+        final height = renderBox.size.height;
+          maxHeight = max(maxHeight, height);
+          validMeasurements++;
       }
     }
-    XLog.t(
-      '==huy _keys length ${_keys.length} _measureItems maxHeight $maxHeight',
-    );
-    // If the height has changed, trigger a rebuild.
-    if (mounted && maxHeight > 0 && maxHeight != _maxHeight) {
+
+    // Chỉ cập nhật nếu có đủ measurements hợp lệ và height thay đổi
+    if (mounted &&
+        validMeasurements > 0 &&
+        maxHeight > 0 &&
+        maxHeight != _maxHeight ) {
+      // Thêm giới hạn để tránh giá trị bất thường
       setState(() {
         _maxHeight = maxHeight;
+      });
+    } else if (mounted && validMeasurements == 0 && _measurementRetries < 2) {
+      // Retry measurement nếu không có measurement hợp lệ
+      _measurementRetries++;
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (mounted) {
+          _measureItems();
+        }
       });
     }
   }
@@ -66,6 +86,7 @@ class _XUniformHeightGridViewState extends State<XUniformHeightGridView> {
     if (oldWidget.children != widget.children) {
       _keys.clear();
       _keys = List.generate(widget.children.length, (_) => GlobalKey());
+      _measurementRetries = 0; // Reset retry counter
       WidgetsBinding.instance.addPostFrameCallback((_) => _measureItems());
     }
   }
@@ -81,41 +102,46 @@ class _XUniformHeightGridViewState extends State<XUniformHeightGridView> {
     // Đo và render dùng cùng một bề rộng tile tính theo LayoutBuilder
     return LayoutBuilder(
       builder: (context, constraints) {
-        final double availableWidth = constraints.maxWidth;
+        final availableWidth =
+            widget.trailing != null &&
+                widget.trailingWidth != null &&
+                widget.trailingWidth! > 0
+            ? constraints.maxWidth -
+                  (widget.trailingWidth ?? 0) -
+                  widget.crossAxisSpacing
+            : constraints.maxWidth;
         // Grid tiles width as used by GridView with crossAxisSpacing between tiles
-        final double tileWidth = widget.crossAxisCount == 1
-            ? availableWidth
-            : (availableWidth -
-                      (widget.crossAxisSpacing * (widget.crossAxisCount - 1))) /
-                  widget.crossAxisCount;
-
+        final tileWidth =
+            (availableWidth -
+                (widget.crossAxisSpacing * (widget.crossAxisCount - 1))) /
+            widget.crossAxisCount;
+        XLog.t(
+          'XUniformHeightGridView _keys availableWidth $availableWidth widget.crossAxisCount ${widget.crossAxisCount} tileWidth $tileWidth',
+        );
         // Nếu chưa có _maxHeight, đo offstage với đúng tileWidth để tránh sai lệch
         if (_maxHeight == null) {
           return Stack(
             children: [
               Offstage(
                 offstage: true,
-                child: Column(
-                  children: List.generate(widget.children.length, (index) {
-                    return ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minWidth: tileWidth,
-                        maxWidth: tileWidth,
-                      ),
-                      child: Container(
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: List.generate(widget.children.length, (index) {
+                      return SizedBox(
+                        width: tileWidth,
                         key: _keys[index],
                         child: widget.children[index],
-                      ),
-                    );
-                  }),
+                      );
+                    }),
+                  ),
                 ),
               ),
               const Center(child: CircularProgressIndicator()),
             ],
           );
         }
-
-        return GridView.builder(
+        final child = GridView.builder(
+          primary: false,
           shrinkWrap: widget.shrinkWrap,
           physics: widget.isScrollable
               ? null
@@ -124,15 +150,34 @@ class _XUniformHeightGridViewState extends State<XUniformHeightGridView> {
             crossAxisCount: widget.crossAxisCount,
             mainAxisSpacing: widget.mainAxisSpacing,
             crossAxisSpacing: widget.crossAxisSpacing,
-            // Calculate the aspect ratio to enforce the uniform height.
-            // When childAspectRatio = tileWidth / _maxHeight, GridView will
-            // produce item height exactly _maxHeight.
             childAspectRatio: tileWidth / _maxHeight!,
           ),
+          padding: EdgeInsets.zero,
           itemCount: widget.children.length,
           itemBuilder: (context, index) {
             return widget.children[index];
           },
+        );
+        if (widget.trailing == null) {
+          return child;
+        }
+        final totalRows = (widget.children.length / widget.crossAxisCount)
+            .ceil();
+        final totalHeight =
+            _maxHeight! * totalRows + widget.crossAxisSpacing * (totalRows - 1);
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          spacing: widget.crossAxisSpacing,
+          children: [
+            Expanded(child: child),
+            Center(
+              child: SizedBox(
+                height: totalHeight,
+                width: widget.trailingWidth ?? 0,
+                child: widget.trailing!,
+              ),
+            ),
+          ],
         );
       },
     );

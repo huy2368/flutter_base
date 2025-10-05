@@ -16,37 +16,13 @@ class XDropdownThemeExtension extends ThemeExtension<XDropdownThemeExtension> {
   final Map<EWidgetSize, Widget?> trailingWidgets;
 
   const XDropdownThemeExtension({
-    this.heights = const {
-      EWidgetSize.small: 32.0,
-      EWidgetSize.medium: 36.0,
-      EWidgetSize.large: 48.0,
-    },
-    this.paddings = const {
-      EWidgetSize.small: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      EWidgetSize.medium: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      EWidgetSize.large: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-    },
+    this.heights = const {},
+    this.paddings = const {},
     this.borderRadius = const {},
-    this.fontSizes = const {
-      EWidgetSize.small: 12.0,
-      EWidgetSize.medium: 14.0,
-      EWidgetSize.large: 16.0,
-    },
-    this.iconSizes = const {
-      EWidgetSize.small: 12.0,
-      EWidgetSize.medium: 12.0,
-      EWidgetSize.large: 12.0,
-    },
-    this.menuHeights = const {
-      EWidgetSize.small: 200.0,
-      EWidgetSize.medium: 224.0,
-      EWidgetSize.large: 250.0,
-    },
-    this.menuPaddings = const {
-      EWidgetSize.small: EdgeInsets.all(8),
-      EWidgetSize.medium: EdgeInsets.all(12),
-      EWidgetSize.large: EdgeInsets.all(16),
-    },
+    this.fontSizes = const {},
+    this.iconSizes = const {},
+    this.menuHeights = const {},
+    this.menuPaddings = const {},
     required this.menuShapes,
     this.menuBackgroundColors = const {},
     required this.textStyles,

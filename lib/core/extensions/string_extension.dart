@@ -5,6 +5,28 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
+extension ListStringExtension on List<String> {
+  Size findMaxTextSize({
+    required TextStyle style,
+    int? maxLine = 1,
+    double minWidth = 0,
+    double maxWidth = double.infinity,
+  }) {
+    String longestText = '';
+    for (var text in this) {
+      if (text.length > longestText.length) {
+        longestText = text;
+      }
+    }
+    return longestText.calculateTextSize(
+      style: style,
+      maxLine: maxLine,
+      minWidth: minWidth,
+      maxWidth: maxWidth,
+    );
+  }
+}
+
 extension TextExtension on String {
   Text get headlineS =>
       Text(this, style: navigatorKey.currentContext!.headlineS);
@@ -84,7 +106,7 @@ extension StringExtension on String? {
 
   Size calculateTextSize({
     required TextStyle style,
-    int maxLine = 1,
+    int? maxLine = 1,
     double minWidth = 0,
     double maxWidth = double.infinity,
   }) {
