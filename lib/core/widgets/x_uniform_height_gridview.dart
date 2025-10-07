@@ -55,8 +55,8 @@ class _XUniformHeightGridViewState extends State<XUniformHeightGridView> {
       final renderBox = key.currentContext?.findRenderObject() as RenderBox?;
       if (renderBox != null && renderBox.hasSize) {
         final height = renderBox.size.height;
-          maxHeight = max(maxHeight, height);
-          validMeasurements++;
+        maxHeight = max(maxHeight, height);
+        validMeasurements++;
       }
     }
 
@@ -64,7 +64,10 @@ class _XUniformHeightGridViewState extends State<XUniformHeightGridView> {
     if (mounted &&
         validMeasurements > 0 &&
         maxHeight > 0 &&
-        maxHeight != _maxHeight ) {
+        maxHeight != _maxHeight) {
+      //   XLog.t(
+      //  'XUniformHeightGridView _keys _maxHeight $_maxHeight',
+      //);
       // Thêm giới hạn để tránh giá trị bất thường
       setState(() {
         _maxHeight = maxHeight;
@@ -116,7 +119,7 @@ class _XUniformHeightGridViewState extends State<XUniformHeightGridView> {
                 (widget.crossAxisSpacing * (widget.crossAxisCount - 1))) /
             widget.crossAxisCount;
         XLog.t(
-          'XUniformHeightGridView _keys availableWidth $availableWidth widget.crossAxisCount ${widget.crossAxisCount} tileWidth $tileWidth',
+          'XUniformHeightGridView _keys availableWidth $availableWidth widget.crossAxisCount ${widget.crossAxisCount} tileWidth $tileWidth _maxHeight $_maxHeight',
         );
         // Nếu chưa có _maxHeight, đo offstage với đúng tileWidth để tránh sai lệch
         if (_maxHeight == null) {

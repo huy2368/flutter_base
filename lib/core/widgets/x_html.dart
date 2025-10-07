@@ -4,6 +4,7 @@ import 'package:core/core/extensions/_extensions.dart';
 import 'package:core/core/navigator_key.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
 import 'x_shimmer.dart';
@@ -147,27 +148,34 @@ class ImgHtmlExtension extends HtmlExtension {
     final imageUrl = context.element?.attributes['src'] ?? '';
     log('== $imageUrl');
     return WidgetSpan(
-      child: Image.network(
-        imageUrl,
-        loadingBuilder: (context, child, loadingProgress) {
-          final done =
-              loadingProgress == null ||
-              loadingProgress.cumulativeBytesLoaded >=
-                  (loadingProgress.expectedTotalBytes ?? 0);
+      child: imageUrl.toLowerCase().endsWith('.svg')
+          ? SvgPicture.network(
+              imageUrl,
+              fit: BoxFit.contain,
+              placeholderBuilder: (context) =>
+                  const XShimmer(done: false, child: SizedBox(height: 200)),
+            )
+          : Image.network(
+              imageUrl,
+              loadingBuilder: (context, child, loadingProgress) {
+                final done =
+                    loadingProgress == null ||
+                    loadingProgress.cumulativeBytesLoaded >=
+                        (loadingProgress.expectedTotalBytes ?? 0);
 
-          return XShimmer(
-            done: done,
-            child: done
-                ? child
-                : SizedBox(width: context.xwidth - 32, height: 200),
-          );
-        },
-        errorBuilder: (_, o, st) {
-          log(o.toString());
-          log(st?.toString() ?? '');
-          return const SizedBox();
-        },
-      ),
+                return XShimmer(
+                  done: done,
+                  child: done
+                      ? child
+                      : SizedBox(width: context.xwidth - 32, height: 200),
+                );
+              },
+              errorBuilder: (_, o, st) {
+                log(o.toString());
+                log(st?.toString() ?? '');
+                return const SizedBox();
+              },
+            ),
     );
   }
 }
