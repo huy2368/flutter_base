@@ -4,9 +4,9 @@ import 'package:core/core/extensions/_extensions.dart';
 import 'package:core/core/navigator_key.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
+import 'x_network_vector_image.dart';
 import 'x_shimmer.dart';
 
 class XHtml extends StatelessWidget {
@@ -149,11 +149,13 @@ class ImgHtmlExtension extends HtmlExtension {
     log('== $imageUrl');
     return WidgetSpan(
       child: imageUrl.toLowerCase().endsWith('.svg')
-          ? SvgPicture.network(
-              imageUrl,
+          ? XNetworkVectorImage(
+              url: imageUrl,
               fit: BoxFit.contain,
-              placeholderBuilder: (context) =>
-                  const XShimmer(done: false, child: SizedBox(height: 200)),
+              placeholder: const XShimmer(
+                done: false,
+                child: SizedBox(height: 200),
+              ),
             )
           : Image.network(
               imageUrl,

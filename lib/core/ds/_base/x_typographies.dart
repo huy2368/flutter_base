@@ -9,19 +9,28 @@ class XTypographies {
 }
 
 extension TextDecorationExt on TextStyle {
-  TextStyle get overline => copyWith(decoration: TextDecoration.overline);
+  TextStyle get overline =>
+      copyWith(decoration: TextDecoration.overline, decorationColor: color);
 
-  TextStyle get underline => copyWith(decoration: TextDecoration.underline);
+  TextStyle get underline =>
+      copyWith(decoration: TextDecoration.underline, decorationColor: color);
 
-  TextStyle get lineThrough => copyWith(decoration: TextDecoration.lineThrough);
+  TextStyle get lineThrough =>
+      copyWith(decoration: TextDecoration.lineThrough, decorationColor: color);
 }
 
 extension TextStyleHeightExt on TextStyle {
   TextStyle get height1 => copyWith(height: 1.0);
 
+  TextStyle get height11 => copyWith(height: 1.1);
+
   TextStyle get height12 => copyWith(height: 1.2);
 
   TextStyle get height125 => copyWith(height: 1.25);
+
+  TextStyle get height13 => copyWith(height: 1.3);
+
+  TextStyle get height14 => copyWith(height: 1.4);
 
   TextStyle get height15 => copyWith(height: 1.5);
 }
