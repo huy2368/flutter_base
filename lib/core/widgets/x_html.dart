@@ -17,7 +17,7 @@ class XHtml extends StatelessWidget {
     this.fontWeight = FontWeight.w400,
     this.fontSize = 14,
     this.lineHeight = 1.5,
-    this.fontColor = Colors.black,
+    this.fontColor,
     this.extensions = const [],
     this.shrinkWrap = false,
     super.key,
@@ -29,7 +29,7 @@ class XHtml extends StatelessWidget {
   final FontWeight fontWeight;
   final double fontSize;
   final double lineHeight;
-  final Color fontColor;
+  final Color? fontColor;
   final Map<String, Style> style;
   final List<HtmlExtension> extensions;
   final bool shrinkWrap;
@@ -46,6 +46,7 @@ class XHtml extends StatelessWidget {
         fontFamily: effectiveFontFamily,
         fontSize: FontSize(fontSize, Unit.px),
         color: fontColor,
+        fontWeight: fontWeight,
         lineHeight: LineHeight(lineHeight, units: 'px'),
       ),
       'p': Style(

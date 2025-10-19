@@ -33,9 +33,9 @@ extension ContextExtensionMediaQuery on BuildContext {
 
   double get xmargin {
     if (XPlatform.isAndroid || XPlatform.isIOS) {
-      return xlerp(min: 16, max: xisPortrait ? 32 : 64);
+      return xlerp(min: 13, max: xisPortrait ? 32 : 64);
     }
-    return xlerp(min: 16, max: 94);
+    return xlerp(min: 13, max: 94);
   }
 
   double get xlmargin => xmargin;
@@ -63,7 +63,9 @@ extension ContextExtensionMediaQuery on BuildContext {
   }) {
     if (min == max) return min;
 
-    final w = width ?? xwidth;
+    final w =
+        width ??
+        (xwidth - xleftPadding - xrightPadding - sw(xisPortrait ? 32 : 64) * 2);
     final result =
         min +
         (max - min) * ((w - minWidth) / (maxWidth - minWidth)).clamp(0, 1);
