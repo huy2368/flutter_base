@@ -302,7 +302,7 @@ class _XButtonState extends State<XButton> {
           _buttonThemeExtension?.loadingWidget ??
           LayoutBuilder(
             builder: (_, constraints) {
-              final loadingHeight = min(constraints.maxHeight / 2, 24.0);
+              final loadingHeight = min(constraints.maxHeight * 2 / 3, 24.0);
               return SizedBox(
                 width: constraints.maxWidth,
                 child: Center(
