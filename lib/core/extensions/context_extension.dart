@@ -33,9 +33,21 @@ extension ContextExtensionMediaQuery on BuildContext {
 
   double get xmargin {
     if (XPlatform.isAndroid || XPlatform.isIOS) {
-      return xlerp(min: 13, max: xisPortrait ? 32 : 64);
+      return xlerp(
+        min: 13,
+        max: xisPortrait ? 32 : 64,
+        width: xwidth,
+        minWidth: 375,
+        maxWidth: 900,
+      );
     }
-    return xlerp(min: 13, max: 94);
+    return xlerp(
+      min: 13,
+      max: 94,
+      width: xwidth,
+      minWidth: 375,
+      maxWidth: 1440,
+    );
   }
 
   double get xlmargin => xmargin;
@@ -59,13 +71,11 @@ extension ContextExtensionMediaQuery on BuildContext {
     required double max,
     double? width,
     double minWidth = 375,
-    double maxWidth = 1252,
+    double maxWidth = 1440,
   }) {
     if (min == max) return min;
 
-    final w =
-        width ??
-        (xwidth - xleftPadding - xrightPadding - sw(xisPortrait ? 32 : 64) * 2);
+    final w = width ?? (xwidth - xleftPadding - xrightPadding - xmargin * 2);
     final result =
         min +
         (max - min) * ((w - minWidth) / (maxWidth - minWidth)).clamp(0, 1);

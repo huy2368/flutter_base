@@ -6,7 +6,9 @@ import 'package:flutter/material.dart';
 // A wrapper widget that handles the measurement logic.
 class XUniformHeightGridView extends StatefulWidget {
   final List<Widget> children;
-  final int crossAxisCount;
+  final int? crossAxisCount;
+  final double? minItemWidth;
+  final double? maxItemWidth;
   final double mainAxisSpacing;
   final double crossAxisSpacing;
   final bool isScrollable;
@@ -17,14 +19,19 @@ class XUniformHeightGridView extends StatefulWidget {
   const XUniformHeightGridView({
     super.key,
     required this.children,
-    this.crossAxisCount = 2,
+    this.crossAxisCount,
+    this.minItemWidth,
+    this.maxItemWidth,
     this.mainAxisSpacing = 8.0,
     this.crossAxisSpacing = 8.0,
     this.isScrollable = false,
     this.shrinkWrap = false,
     this.trailing,
     this.trailingWidth,
-  });
+  }) : assert(
+         crossAxisCount != null || minItemWidth != null,
+         'Phải cung cấp crossAxisCount hoặc minItemWidth',
+       );
 
   @override
   State<XUniformHeightGridView> createState() => _XUniformHeightGridViewState();
@@ -42,12 +49,19 @@ class _XUniformHeightGridViewState extends State<XUniformHeightGridView> {
   void initState() {
     super.initState();
     // Initialize a GlobalKey for each child widget.
-    _keys = List.generate(widget.children.length, (_) => GlobalKey());
+    _generateKeys();
     // Schedule the measurement to run after the first frame is rendered.
     WidgetsBinding.instance.addPostFrameCallback((_) => _measureItems());
   }
 
+  void _generateKeys() {
+    _keys = List.generate(widget.children.length, (_) => GlobalKey());
+  }
+
   void _measureItems() {
+    XLog.t(
+      'XUniformHeightGridView _measureItems _measurementRetries $_measurementRetries',
+    );
     double maxHeight = 0;
     int validMeasurements = 0;
 
@@ -58,6 +72,9 @@ class _XUniformHeightGridViewState extends State<XUniformHeightGridView> {
         maxHeight = max(maxHeight, height);
         validMeasurements++;
       }
+      XLog.t(
+        'XUniformHeightGridView _keys renderBox ${renderBox?.hasSize} maxHeight $maxHeight',
+      );
     }
 
     // Chỉ cập nhật nếu có đủ measurements hợp lệ và height thay đổi
@@ -65,9 +82,9 @@ class _XUniformHeightGridViewState extends State<XUniformHeightGridView> {
         validMeasurements > 0 &&
         maxHeight > 0 &&
         maxHeight != _maxHeight) {
-      //   XLog.t(
-      //  'XUniformHeightGridView _keys _maxHeight $_maxHeight',
-      //);
+      XLog.t(
+        'XUniformHeightGridView _keys _maxHeight $_maxHeight maxHeight $maxHeight',
+      );
       // Thêm giới hạn để tránh giá trị bất thường
       setState(() {
         _maxHeight = maxHeight;
@@ -86,9 +103,15 @@ class _XUniformHeightGridViewState extends State<XUniformHeightGridView> {
   @override
   void didUpdateWidget(XUniformHeightGridView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.children != widget.children) {
-      _keys.clear();
-      _keys = List.generate(widget.children.length, (_) => GlobalKey());
+    if (oldWidget.children != widget.children ||
+        oldWidget.trailing != widget.trailing ||
+        oldWidget.trailingWidth != widget.trailingWidth ||
+        oldWidget.crossAxisCount != widget.crossAxisCount ||
+        oldWidget.minItemWidth != widget.minItemWidth ||
+        oldWidget.maxItemWidth != widget.maxItemWidth ||
+        oldWidget.mainAxisSpacing != widget.mainAxisSpacing ||
+        oldWidget.crossAxisSpacing != widget.crossAxisSpacing) {
+      _generateKeys();
       _measurementRetries = 0; // Reset retry counter
       WidgetsBinding.instance.addPostFrameCallback((_) => _measureItems());
     }
@@ -105,81 +128,140 @@ class _XUniformHeightGridViewState extends State<XUniformHeightGridView> {
     // Đo và render dùng cùng một bề rộng tile tính theo LayoutBuilder
     return LayoutBuilder(
       builder: (context, constraints) {
-        final availableWidth =
+        final trailingWidth =
             widget.trailing != null &&
                 widget.trailingWidth != null &&
                 widget.trailingWidth! > 0
-            ? constraints.maxWidth -
-                  (widget.trailingWidth ?? 0) -
-                  widget.crossAxisSpacing
+            ? widget.trailingWidth!
+            : 0;
+        final availableWidth = trailingWidth > 0
+            ? constraints.maxWidth - trailingWidth - widget.crossAxisSpacing
             : constraints.maxWidth;
+
+        // Tính toán crossAxisCount dựa trên minItemWidth/maxItemWidth hoặc sử dụng giá trị cố định
+        final int effectiveCrossAxisCount;
+        if (widget.crossAxisCount != null) {
+          effectiveCrossAxisCount = widget.crossAxisCount!;
+        } else {
+          // Tính toán dựa trên minItemWidth và maxItemWidth
+          final minWidth = widget.minItemWidth!;
+
+          // Tính số cột tối đa dựa trên minItemWidth (item nhỏ nhất -> nhiều cột nhất)
+          int calculatedColumns =
+              ((availableWidth + widget.crossAxisSpacing) /
+                      (minWidth + widget.crossAxisSpacing))
+                  .floor();
+          calculatedColumns = max(1, calculatedColumns);
+
+          // Nếu có maxItemWidth, kiểm tra xem với số cột đã tính, item width có vượt quá maxWidth không
+          if (widget.maxItemWidth != null) {
+            final actualItemWidth =
+                (availableWidth -
+                    (widget.crossAxisSpacing * (calculatedColumns - 1))) /
+                calculatedColumns;
+
+            // Nếu item width vượt quá maxWidth, tăng số cột để giảm width
+            if (actualItemWidth > widget.maxItemWidth!) {
+              calculatedColumns =
+                  ((availableWidth + widget.crossAxisSpacing) /
+                          (widget.maxItemWidth! + widget.crossAxisSpacing))
+                      .ceil();
+              calculatedColumns = max(1, calculatedColumns);
+            }
+          }
+
+          effectiveCrossAxisCount = calculatedColumns;
+        }
+
         // Grid tiles width as used by GridView with crossAxisSpacing between tiles
         final tileWidth =
             (availableWidth -
-                (widget.crossAxisSpacing * (widget.crossAxisCount - 1))) /
-            widget.crossAxisCount;
+                (widget.crossAxisSpacing * (effectiveCrossAxisCount - 1))) /
+            effectiveCrossAxisCount;
         XLog.t(
-          'XUniformHeightGridView _keys availableWidth $availableWidth widget.crossAxisCount ${widget.crossAxisCount} tileWidth $tileWidth _maxHeight $_maxHeight',
+          'XUniformHeightGridView _keys trailingwidht ${widget.trailingWidth} availableWidth $availableWidth effectiveCrossAxisCount $effectiveCrossAxisCount tileWidth $tileWidth _maxHeight $_maxHeight',
         );
-        // Nếu chưa có _maxHeight, đo offstage với đúng tileWidth để tránh sai lệch
-        if (_maxHeight == null) {
-          return Stack(
+        final offstageChild = Offstage(
+          offstage: true,
+          child: Wrap(
+            children: List.generate(widget.children.length, (index) {
+              return SizedBox(
+                width: tileWidth,
+                key: _keys[index],
+                child: widget.children[index],
+              );
+            }),
+          ),
+        );
+        if (widget.trailing == null) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Offstage(
-                offstage: true,
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: List.generate(widget.children.length, (index) {
-                      return SizedBox(
-                        width: tileWidth,
-                        key: _keys[index],
-                        child: widget.children[index],
-                      );
-                    }),
+              offstageChild,
+              if (_maxHeight != null)
+                GridView.builder(
+                  primary: false,
+                  shrinkWrap: widget.shrinkWrap,
+                  physics: widget.isScrollable
+                      ? null
+                      : const NeverScrollableScrollPhysics(),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: effectiveCrossAxisCount,
+                    mainAxisSpacing: widget.mainAxisSpacing,
+                    crossAxisSpacing: widget.crossAxisSpacing,
+                    childAspectRatio: tileWidth / _maxHeight!,
                   ),
+                  padding: EdgeInsets.zero,
+                  itemCount: widget.children.length,
+                  itemBuilder: (context, index) {
+                    return widget.children[index];
+                  },
                 ),
-              ),
-              const Center(child: CircularProgressIndicator()),
             ],
           );
         }
-        final child = GridView.builder(
-          primary: false,
-          shrinkWrap: widget.shrinkWrap,
-          physics: widget.isScrollable
-              ? null
-              : const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: widget.crossAxisCount,
-            mainAxisSpacing: widget.mainAxisSpacing,
-            crossAxisSpacing: widget.crossAxisSpacing,
-            childAspectRatio: tileWidth / _maxHeight!,
-          ),
-          padding: EdgeInsets.zero,
-          itemCount: widget.children.length,
-          itemBuilder: (context, index) {
-            return widget.children[index];
-          },
-        );
-        if (widget.trailing == null) {
-          return child;
-        }
-        final totalRows = (widget.children.length / widget.crossAxisCount)
+        final totalRows = (widget.children.length / effectiveCrossAxisCount)
             .ceil();
-        final totalHeight =
-            _maxHeight! * totalRows + widget.crossAxisSpacing * (totalRows - 1);
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          spacing: widget.crossAxisSpacing,
+        return Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Expanded(child: child),
-            Center(
-              child: SizedBox(
-                height: totalHeight,
-                width: widget.trailingWidth ?? 0,
-                child: widget.trailing!,
+            offstageChild,
+            if (_maxHeight != null)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: widget.crossAxisSpacing,
+                children: [
+                  Expanded(
+                    child: GridView.builder(
+                      primary: false,
+                      shrinkWrap: widget.shrinkWrap,
+                      physics: widget.isScrollable
+                          ? null
+                          : const NeverScrollableScrollPhysics(),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: effectiveCrossAxisCount,
+                        mainAxisSpacing: widget.mainAxisSpacing,
+                        crossAxisSpacing: widget.crossAxisSpacing,
+                        childAspectRatio: tileWidth / _maxHeight!,
+                      ),
+                      padding: EdgeInsets.zero,
+                      itemCount: widget.children.length,
+                      itemBuilder: (context, index) {
+                        return widget.children[index];
+                      },
+                    ),
+                  ),
+                  Center(
+                    child: SizedBox(
+                      height:
+                          _maxHeight! * totalRows +
+                          widget.crossAxisSpacing * (totalRows - 1),
+                      width: widget.trailingWidth ?? 0,
+                      child: widget.trailing!,
+                    ),
+                  ),
+                ],
               ),
-            ),
           ],
         );
       },
