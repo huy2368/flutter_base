@@ -103,17 +103,26 @@ extension DurationExtension on int? {
     return '$dayTxt$separator$hourTxt$separator$minuteTxt$separator$secondTxt';
   }
 
-  String toDurationString([String separator = ':']) {
+  String toDurationString({
+    String separator = ':',
+    String? hourSuffix,
+    String? minuteSuffix,
+    String? secondSuffix,
+  }) {
     if (this == null || this! < 0) return '';
 
     final hours = this! ~/ XConsts.hourInSecond;
-    final hourTxt = hours > 0 ? '${'$hours'.padLeft(2, '0')}$separator' : '';
+    final hourTxt = hours > 0
+        ? '${'$hours'.padLeft(2, '0')}${hourSuffix ?? ''}$separator'
+        : '';
     final int remainder = this! % XConsts.hourInSecond;
     final minutes = remainder ~/ XConsts.minuteInSecond;
-    final minuteTxt = '${'$minutes'.padLeft(2, '0')}$separator';
+    final minuteTxt =
+        '${'$minutes'.padLeft(2, '0')}${minuteSuffix ?? ''}$separator';
     final seconds = remainder % XConsts.minuteInSecond;
-    final secondTxt = '$seconds'.padLeft(2, '0');
+    final secondTxt = '${'$seconds'.padLeft(2, '0')}${secondSuffix ?? ''}';
 
     return '$hourTxt$minuteTxt$secondTxt';
   }
+
 }

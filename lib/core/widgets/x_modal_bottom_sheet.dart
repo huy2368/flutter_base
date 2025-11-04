@@ -65,11 +65,7 @@ class XModalBottomSheet extends StatelessWidget {
             left: padding.left,
             right: padding.right,
             top: padding.top + (ignoreSafeArea ? viewPaddingTop : 0),
-            bottom: kIsWeb
-                ? padding.bottom
-                : Platform.isIOS && context.xisPhone
-                ? viewPaddingBottom
-                : padding.bottom + viewPaddingBottom,
+            bottom: padding.bottom + viewPaddingBottom,
           ),
           margin: ignoreSafeArea
               ? margin
