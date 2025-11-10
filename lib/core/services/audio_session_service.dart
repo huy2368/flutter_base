@@ -293,19 +293,19 @@ class AudioSessionService {
     // Handle interruptions for both audio player and recording
     bool playInterrupted = false;
     audioSession.becomingNoisyEventStream.listen((_) {
-      XLog.t('Audio becoming noisy');
+      XLog.l('Audio becoming noisy');
       audioPlayer.pause();
     });
     audioPlayer.playingStream.listen((playing) {
-      XLog.t('Audio playing: $playing');
+      XLog.l('Audio playing: $playing');
       playInterrupted = false;
       if (playing) {
         audioSession.setActive(true);
       }
     });
     audioSession.interruptionEventStream.listen((event) {
-      XLog.t('Audio interruption begin: ${event.begin}');
-      XLog.t('Audio interruption type: ${event.type}');
+      XLog.l('Audio interruption begin: ${event.begin}');
+      XLog.l('Audio interruption type: ${event.type}');
 
       // Notify recording controller if callback is set
       onRecordingInterruption?.call(event);
@@ -344,8 +344,8 @@ class AudioSessionService {
       }
     });
     audioSession.devicesChangedEventStream.listen((event) {
-      XLog.t('Audio devices added: ${event.devicesAdded}');
-      XLog.t('Audio devices removed: ${event.devicesRemoved}');
+      XLog.l('Audio devices added: ${event.devicesAdded}');
+      XLog.l('Audio devices removed: ${event.devicesRemoved}');
     });
     audioSession.getDevices().then((devices) {
       for (var device in devices) {
@@ -360,7 +360,7 @@ class AudioSessionService {
           } else if (device.type == AudioDeviceType.builtInSpeaker) {
             _currentOutput.value = 'Built-in speaker';
           }
-          XLog.t('Audio input available device: ${_currentOutput.value}');
+          XLog.l('Audio input available device: ${_currentOutput.value}');
         } else if (device.isInput) {
           if (device.type == AudioDeviceType.bluetoothA2dp ||
               device.type == AudioDeviceType.bluetoothLe ||
@@ -372,13 +372,13 @@ class AudioSessionService {
           } else if (device.type == AudioDeviceType.builtInMic) {
             _currentInput.value = 'Built-in microphone';
           }
-          XLog.t('Audio output available device: ${_currentInput.value}');
+          XLog.l('Audio output available device: ${_currentInput.value}');
         }
       }
     });
     audioSession.devicesStream.listen((devices) {
       for (var device in devices) {
-        XLog.t('Audio device: ${device.toString()}');
+        XLog.l('Audio device: ${device.toString()}');
       }
     });
   }

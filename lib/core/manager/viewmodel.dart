@@ -1,5 +1,8 @@
 import 'dart:async' show StreamSubscription;
+import 'dart:convert' show base64Url, jsonDecode, jsonEncode, utf8;
+import 'dart:io' show Directory, File;
 
+import 'package:core/core.dart' show XLog;
 import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/widgets.dart';
 import 'package:get_it/get_it.dart';
@@ -18,6 +21,12 @@ class ViewModel extends Object {
   }
 
   void onReady() {}
+
+  void onViewInit() {}
+
+  void onViewReady() {}
+
+  void onViewChange() {}
 
   @mustCallSuper
   void dispose() {
@@ -78,6 +87,92 @@ class ViewModel extends Object {
 
   void addStreamSubscription(StreamSubscription subscription) {
     _streamSubscriptions.add(subscription);
+  }
+}
+
+mixin VMCachedMixin on ViewModel {
+  static const _cacheDirName = 'vm_state_cache';
+  Directory? _cacheDirectory;
+
+  Future<void> fetchAndCache<R>(
+    Future<R> Function() fetch, {
+    required String key,
+    required R Function(Map<String, dynamic>) fromJson,
+    required Map<String, dynamic> Function(R) toJson,
+    required ValueChanged<R?> onDataChanged,
+  }) async {
+    try {
+      File? cacheFile = await _resolveCacheFile(key);
+      R? cachedData = await _readCachedData(cacheFile, fromJson);
+      if (cachedData != null) {
+        XLog.l('VMCachedStateMixin $key use data from cache');
+        onDataChanged(cachedData);
+      }
+
+      try {
+        final data = await fetch();
+        final hasChanged = data != cachedData;
+        if (hasChanged) {
+          XLog.l('VMCachedStateMixin $key data has changed => write cache');
+          onDataChanged(data);
+          _writeCachedData(cacheFile, toJson, data);
+        }
+      } catch (e, st) {
+        XLog.e('VMCachedStateMixin $key fetch error: $e $st');
+        if (cachedData == null) onDataChanged(null);
+      }
+    } catch (e, st) {
+      XLog.e('VMCachedStateMixin $key fetchAndCache $key error: $e $st');
+      onDataChanged(null);
+    }
+  }
+
+  Future<File?> _resolveCacheFile(String key) async {
+    final safeKey = base64Url.encode(utf8.encode(key));
+    try {
+      final dir = _cacheDirectory ??= Directory(
+        '${Directory.systemTemp.path}/$_cacheDirName',
+      );
+      if (!await dir.exists()) {
+        await dir.create(recursive: true);
+      }
+      return File('${dir.path}/$safeKey.json');
+    } catch (e, st) {
+      XLog.e('VMCachedStateMixin resolve cache file error: $e $st');
+      return null;
+    }
+  }
+
+  Future<R?> _readCachedData<R>(
+    File? file,
+    R Function(Map<String, dynamic>) fromJson,
+  ) async {
+    if (file == null || !await file.exists()) {
+      return null;
+    }
+    try {
+      final raw = await file.readAsString();
+      return fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    } catch (e, st) {
+      XLog.e('VMCachedStateMixin read cache error: $e $st');
+      return null;
+    }
+  }
+
+  Future<void> _writeCachedData<R>(
+    File? file,
+    Map<String, dynamic> Function(R data) toJson,
+    R data,
+  ) async {
+    if (file == null) {
+      return;
+    }
+    try {
+      final jsonData = jsonEncode(toJson(data));
+      await file.writeAsString(jsonData, flush: true);
+    } catch (e, st) {
+      XLog.e('VMCachedStateMixin write cache error: $e $st');
+    }
   }
 }
 

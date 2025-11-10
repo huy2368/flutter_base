@@ -59,7 +59,7 @@ class _XUniformHeightGridViewState extends State<XUniformHeightGridView> {
   }
 
   void _measureItems() {
-    XLog.t(
+    XLog.l(
       'XUniformHeightGridView _measureItems _measurementRetries $_measurementRetries',
     );
     double maxHeight = 0;
@@ -72,7 +72,7 @@ class _XUniformHeightGridViewState extends State<XUniformHeightGridView> {
         maxHeight = max(maxHeight, height);
         validMeasurements++;
       }
-      XLog.t(
+      XLog.l(
         'XUniformHeightGridView _keys renderBox ${renderBox?.hasSize} maxHeight $maxHeight',
       );
     }
@@ -82,7 +82,7 @@ class _XUniformHeightGridViewState extends State<XUniformHeightGridView> {
         validMeasurements > 0 &&
         maxHeight > 0 &&
         maxHeight != _maxHeight) {
-      XLog.t(
+      XLog.l(
         'XUniformHeightGridView _keys _maxHeight $_maxHeight maxHeight $maxHeight',
       );
       // Thêm giới hạn để tránh giá trị bất thường
@@ -147,10 +147,12 @@ class _XUniformHeightGridViewState extends State<XUniformHeightGridView> {
           final minWidth = widget.minItemWidth!;
 
           // Tính số cột tối đa dựa trên minItemWidth (item nhỏ nhất -> nhiều cột nhất)
-          int calculatedColumns =
-              ((availableWidth + widget.crossAxisSpacing) /
-                      (minWidth + widget.crossAxisSpacing))
-                  .floor();
+          final rawCrossAxisCount = availableWidth ~/ minWidth;
+          final remainder = availableWidth % minWidth;
+          int calculatedColumns = min(
+            rawCrossAxisCount,
+            remainder ~/ widget.crossAxisSpacing,
+          );
           calculatedColumns = max(1, calculatedColumns);
 
           // Nếu có maxItemWidth, kiểm tra xem với số cột đã tính, item width có vượt quá maxWidth không
@@ -178,7 +180,7 @@ class _XUniformHeightGridViewState extends State<XUniformHeightGridView> {
             (availableWidth -
                 (widget.crossAxisSpacing * (effectiveCrossAxisCount - 1))) /
             effectiveCrossAxisCount;
-        XLog.t(
+        XLog.l(
           'XUniformHeightGridView _keys trailingwidht ${widget.trailingWidth} availableWidth $availableWidth effectiveCrossAxisCount $effectiveCrossAxisCount tileWidth $tileWidth _maxHeight $_maxHeight',
         );
         final offstageChild = Offstage(

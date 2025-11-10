@@ -1,6 +1,12 @@
+import 'dart:developer' show log;
+
 import 'package:core/core/api/dio/log_interceptor.dart';
 import 'package:dio/dio.dart' hide LogInterceptor;
-import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
+import 'package:dio_cache_interceptor/dio_cache_interceptor.dart';
+//import 'package:dio_cache_interceptor_hive_store/dio_cache_interceptor_hive_store.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:http_cache_hive_store/http_cache_hive_store.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../alice/alice_config.dart';
 
@@ -25,10 +31,15 @@ class XDio {
 
   final Dio dio = Dio();
   final Dio fileDio = Dio();
+  final Dio cachedDio = Dio();
+
+  CacheStore? _cacheStore;
+  CacheOptions? _cacheOptions;
 
   XDio._() {
     _init();
     _initFileDio();
+    _initCachedDio();
   }
 
   void _init() {
@@ -39,8 +50,8 @@ class XDio {
       dio.options.sendTimeout = sendTimeout;
     }
 
-    if (isShowAlice) dio.interceptors.add(aliceInterceptor);
-    if (kDebugMode) {
+    if (isShowAlice) {
+      dio.interceptors.add(aliceInterceptor);
       dio.interceptors.add(LogInterceptor());
     }
   }
@@ -53,9 +64,60 @@ class XDio {
       fileDio.options.sendTimeout = fileSendTimeout;
     }
 
-    if (isShowAlice) fileDio.interceptors.add(aliceInterceptor);
-    if (kDebugMode) {
+    if (isShowAlice) {
+      fileDio.interceptors.add(aliceInterceptor);
       fileDio.interceptors.add(LogInterceptor());
+    }
+  }
+
+  Future<void> _initCachedDio() async {
+    cachedDio.options.connectTimeout = connectTimeout;
+    cachedDio.options.receiveTimeout = receiveTimeout;
+    if (!kIsWeb) {
+      cachedDio.options.sendTimeout = sendTimeout;
+    }
+    try {
+      try {
+        final dir = !kIsWeb ? await getTemporaryDirectory() : null;
+        _cacheStore = HiveCacheStore(dir?.path);
+      } catch (ex) {
+        _cacheStore = MemCacheStore();
+      }
+      _cacheOptions = CacheOptions(
+        store: _cacheStore!,
+        maxStale: const Duration(days: 7),
+        policy: CachePolicy.forceCache,
+        priority: CachePriority.normal,
+        keyBuilder: ({body, headers, required Uri url}) {
+          return '${url.host}_${url.path}_${url.queryParameters}';
+        },
+      );
+    } catch (e) {
+      log(
+        'Failed to initialize HiveCacheStore, continuing with MemCacheStore: $e',
+      );
+    }
+    if (isShowAlice) {
+      cachedDio.interceptors.add(aliceInterceptor);
+      cachedDio.interceptors.add(LogInterceptor());
+      cachedDio.interceptors.add(DioCacheInterceptor(options: _cacheOptions!));
+    }
+  }
+
+  /// Get cache options for manual cache control
+  CacheOptions? get cacheOptions => _cacheOptions;
+
+  /// Clear all cached data
+  Future<void> clearCache() async {
+    await _cacheStore?.clean();
+  }
+
+  /// Delete specific cache by URL
+  Future<void> deleteCacheByUrl(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri != null && _cacheStore != null && _cacheOptions != null) {
+      final key = _cacheOptions!.keyBuilder(url: uri);
+      await _cacheStore!.delete(key);
     }
   }
 }

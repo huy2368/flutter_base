@@ -96,7 +96,7 @@ class _XCountdownState extends State<XCountdown> {
   @override
   Widget build(BuildContext context) {
     final suffix = widget.suffix?.isNotEmpty == true ? ' ${widget.suffix}' : '';
-    XLog.t('==huy minwidth $_minWidth');
+    XLog.l('==huy minwidth $_minWidth');
     return ValueListenableBuilder(
       valueListenable: _duration,
       builder: (_, value, child) {

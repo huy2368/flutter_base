@@ -79,7 +79,7 @@ extension ContextExtensionMediaQuery on BuildContext {
     final result =
         min +
         (max - min) * ((w - minWidth) / (maxWidth - minWidth)).clamp(0, 1);
-    XLog.t(
+    XLog.i(
       'ContextExtension lerp $min $max $minWidth $maxWidth w: $w => $result',
     );
     return result;

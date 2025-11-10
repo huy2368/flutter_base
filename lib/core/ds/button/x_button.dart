@@ -268,7 +268,7 @@ class _XButtonState extends State<XButton> {
     final textStyle = effectiveStyle.textStyle
         ?.resolve({})
         ?.copyWith(fontSize: themeFontSize);
-    XLog.t(
+    XLog.l(
       'effectiveStyle 2: ${effectiveStyle.padding}  ${widget.size} ${effectiveStyle.minimumSize} ${effectiveStyle.maximumSize} ${effectiveStyle.fixedSize} ${effectiveStyle.fixedSize}',
     );
     return effectiveStyle.copyWith(

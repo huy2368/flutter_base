@@ -52,7 +52,7 @@ class XApp {
     xrmargin = xmargin + xrightPadding;
     //xleftPadding = xisPortrait ? xleftPadding : xrightPadding;
     //xrightPadding = xisPortrait ? xrightPadding : xleftPadding;
-    XLog.t(
+    XLog.l(
       '${mediaQuery.orientation} xisPhone $xisPhone xisTablet $xisTablet xisDesktop $xisDesktop margin $xmargin xawidth $xawidth xaheight $xaheight \n${mediaQuery.toString()}',
     );
     print(mediaQuery.toString());
