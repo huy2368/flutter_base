@@ -11,6 +11,7 @@ export 'x_recorder.dart';
 export 'x_regex.dart';
 export 'x_scroll_utils.dart';
 export 'x_shared_preference.dart';
+export 'x_system_chrome_utils.dart';
 export 'x_time_utils.dart';
 export 'x_ui_consts.dart';
 export 'x_validation.dart';

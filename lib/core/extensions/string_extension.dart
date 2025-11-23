@@ -12,18 +12,43 @@ extension ListStringExtension on List<String> {
     double minWidth = 0,
     double maxWidth = double.infinity,
   }) {
-    String longestText = '';
-    for (var text in this) {
-      if (text.length > longestText.length) {
-        longestText = text;
+    if (isEmpty) return Size.zero;
+
+    final textPainter = TextPainter(
+      maxLines: maxLine,
+      textDirection: TextDirection.ltr,
+    );
+
+    Size maxSize = Size.zero;
+
+    for (final text in this) {
+      textPainter
+        ..text = TextSpan(text: text, style: style)
+        ..layout(minWidth: minWidth, maxWidth: maxWidth);
+
+      final size = textPainter.size;
+      final isWider = size.width > maxSize.width;
+      final isTallerAtSameWidth =
+          size.width == maxSize.width && size.height > maxSize.height;
+
+      if (isWider || isTallerAtSameWidth) {
+        maxSize = size;
       }
     }
-    return longestText.calculateTextSize(
-      style: style,
-      maxLine: maxLine,
-      minWidth: minWidth,
-      maxWidth: maxWidth,
-    );
+
+    return maxSize;
+  }
+
+  double findMaxTextsWidth({required TextStyle style}) {
+    if (isEmpty) return 0.0;
+
+    final paragraph = join('\n');
+    final textPainter = TextPainter(
+      text: TextSpan(text: paragraph, style: style),
+      textDirection: TextDirection.ltr,
+    )..layout(maxWidth: double.infinity);
+
+    return textPainter.size.width;
   }
 }
 

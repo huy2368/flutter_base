@@ -29,7 +29,8 @@ class XUniformHeightGridView extends StatefulWidget {
     this.trailing,
     this.trailingWidth,
   }) : assert(
-         crossAxisCount != null || minItemWidth != null,
+         (crossAxisCount != null && crossAxisCount > 0) ||
+             (minItemWidth != null && minItemWidth > 0),
          'Phải cung cấp crossAxisCount hoặc minItemWidth',
        );
 
@@ -151,7 +152,7 @@ class _XUniformHeightGridViewState extends State<XUniformHeightGridView> {
           final remainder = availableWidth % minWidth;
           int calculatedColumns = min(
             rawCrossAxisCount,
-            remainder ~/ widget.crossAxisSpacing,
+            remainder ~/ widget.crossAxisSpacing + 1,
           );
           calculatedColumns = max(1, calculatedColumns);
 
@@ -181,7 +182,7 @@ class _XUniformHeightGridViewState extends State<XUniformHeightGridView> {
                 (widget.crossAxisSpacing * (effectiveCrossAxisCount - 1))) /
             effectiveCrossAxisCount;
         XLog.l(
-          'XUniformHeightGridView _keys trailingwidht ${widget.trailingWidth} availableWidth $availableWidth effectiveCrossAxisCount $effectiveCrossAxisCount tileWidth $tileWidth _maxHeight $_maxHeight',
+          'XUniformHeightGridView _keys maxWidth ${constraints.maxWidth} trailingWidth ${widget.trailingWidth} availableWidth $availableWidth effectiveCrossAxisCount $effectiveCrossAxisCount tileWidth $tileWidth _maxHeight $_maxHeight',
         );
         final offstageChild = Offstage(
           offstage: true,

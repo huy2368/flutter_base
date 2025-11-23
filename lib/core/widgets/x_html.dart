@@ -47,7 +47,7 @@ class XHtml extends StatelessWidget {
         fontSize: FontSize(fontSize, Unit.px),
         color: fontColor,
         fontWeight: fontWeight,
-        lineHeight: LineHeight(lineHeight, units: 'px'),
+        lineHeight: LineHeight(lineHeight),
       ),
       'p': Style(
         fontFamily: effectiveFontFamily,
@@ -55,12 +55,10 @@ class XHtml extends StatelessWidget {
         fontSize: FontSize(fontSize, Unit.px),
         verticalAlign: VerticalAlign.middle,
         alignment: Alignment.center,
-        lineHeight: LineHeight(lineHeight, units: 'px'),
       ),
       'h3': Style(
         fontSize: FontSize(fontSize + 2, Unit.px),
         fontFamily: effectiveFontFamily,
-        fontWeight: fontWeight,
       ),
       "table": Style(
         height: Height.auto(),

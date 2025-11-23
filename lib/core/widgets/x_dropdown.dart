@@ -2,8 +2,6 @@ import 'dart:developer';
 
 import 'package:align_dialog/align_dialog.dart';
 import 'package:core/core.dart';
-import 'package:core/core/ds/consts/widget_size.dart';
-import 'package:core/core/ds/theme_extensions/dropdown_theme_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:substring_highlight/substring_highlight.dart';
 import 'package:tiengviet/tiengviet.dart';
@@ -319,7 +317,7 @@ class _XDropDownState<T> extends State<XDropDown<T>>
 
     // Get theme values for menu with DropdownMenuThemeData as fallback
     final themeMenuHeight =
-        _dropdownThemeExtension?.menuHeights[widget.dropdownSize] ?? 224.0;
+        _dropdownThemeExtension?.menuHeights[widget.dropdownSize];
     final themeMenuPadding =
         _dropdownThemeExtension?.menuPaddings[widget.dropdownSize] ??
         dropdownMenuTheme.menuStyle?.padding?.resolve({}) ??
@@ -369,8 +367,10 @@ class _XDropDownState<T> extends State<XDropDown<T>>
                 Colors.grey;
 
             return Container(
-              height: effectiveMenuHeight,
               width: width,
+              constraints: effectiveMenuHeight != null
+                  ? BoxConstraints(maxHeight: effectiveMenuHeight)
+                  : null,
               decoration: BoxDecoration(
                 color: menuBackgroundColor,
                 border: Border.all(color: menuBorderColor),
@@ -380,6 +380,8 @@ class _XDropDownState<T> extends State<XDropDown<T>>
               ),
               padding: themeMenuPadding,
               child: Column(
+                spacing: 10,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   if (widget.showSearch)
                     XTextField(
@@ -387,19 +389,20 @@ class _XDropDownState<T> extends State<XDropDown<T>>
                       onChanged: (value) => setDialogState(() {}),
                       hintText: 'Search...',
                     ),
-                  Expanded(
-                    child: filteredData.isEmpty
-                        ? Center(
-                            child: Padding(
-                              padding: themeMenuPadding,
-                              child: Text(
-                                'No options available',
-                                style: effectiveTextStyle,
-                              ),
+                  filteredData.isEmpty
+                      ? Center(
+                          child: Padding(
+                            padding: themeMenuPadding,
+                            child: Text(
+                              'No options available',
+                              style: effectiveTextStyle,
                             ),
-                          )
-                        : ListView.builder(
+                          ),
+                        )
+                      : Expanded(
+                          child: ListView.builder(
                             padding: EdgeInsets.zero,
+                            //shrinkWrap: true,
                             itemBuilder: (context, index) {
                               final option = filteredData.elementAt(index);
                               return InkWell(
@@ -432,7 +435,7 @@ class _XDropDownState<T> extends State<XDropDown<T>>
                             },
                             itemCount: filteredData.length,
                           ),
-                  ),
+                        ),
                 ],
               ),
             );

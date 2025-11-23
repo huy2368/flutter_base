@@ -303,18 +303,20 @@ class _XButtonState extends State<XButton> {
           LayoutBuilder(
             builder: (_, constraints) {
               final loadingHeight = min(constraints.maxHeight * 2 / 3, 24.0);
+              final loadingIndicator = SizedBox(
+                width: loadingHeight,
+                height: loadingHeight,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: _getLoadingColor(),
+                ),
+              );
+              if (!constraints.hasBoundedWidth) {
+                return Center(child: loadingIndicator);
+              }
               return SizedBox(
                 width: constraints.maxWidth,
-                child: Center(
-                  child: SizedBox(
-                    width: loadingHeight,
-                    height: loadingHeight,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: _getLoadingColor(),
-                    ),
-                  ),
-                ),
+                child: Center(child: loadingIndicator),
               );
             },
           );

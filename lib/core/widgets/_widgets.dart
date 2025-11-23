@@ -1,3 +1,4 @@
+export 'animation/x_dots_wave.dart';
 export 'controlled_audio_player.dart';
 export 'x_blur_background.dart';
 export 'x_bullet.dart';

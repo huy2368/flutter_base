@@ -1,9 +1,21 @@
-import 'package:core/core.dart' show XLog, XPlatform;
+import 'package:core/core.dart' show XPlatform;
 import 'package:core/core/utils/x_ui_consts.dart';
 import 'package:flutter/material.dart';
 
 import '../navigator_key.dart';
 import 'mediaquerydata_extension.dart';
+
+extension ContextExtensionNavigation on BuildContext {
+  bool get xcanPop =>
+      navigatorKey.currentContext == null ||
+      Navigator.canPop(navigatorKey.currentContext!);
+
+  void xpop() {
+    if (xcanPop) {
+      Navigator.pop(navigatorKey.currentContext!);
+    }
+  }
+}
 
 extension ContextExtensionMediaQuery on BuildContext {
   MediaQueryData get mediaData => MediaQuery.of(this);
@@ -35,10 +47,10 @@ extension ContextExtensionMediaQuery on BuildContext {
     if (XPlatform.isAndroid || XPlatform.isIOS) {
       return xlerp(
         min: 13,
-        max: xisPortrait ? 32 : 64,
+        max: xisPhone || xisPortrait ? 32 : 64,
         width: xwidth,
         minWidth: 375,
-        maxWidth: 900,
+        maxWidth: 810,
       );
     }
     return xlerp(
@@ -50,8 +62,8 @@ extension ContextExtensionMediaQuery on BuildContext {
     );
   }
 
-  double get xlmargin => xmargin;
-  double get xrmargin => xmargin;
+  double get xlmargin => xleftPadding + xmargin;
+  double get xrmargin => xrightPadding + xmargin;
 
   double get xdesignWidth => xisPhone
       ? XUIConsts.smDesignSize.width
@@ -79,9 +91,9 @@ extension ContextExtensionMediaQuery on BuildContext {
     final result =
         min +
         (max - min) * ((w - minWidth) / (maxWidth - minWidth)).clamp(0, 1);
-    XLog.i(
-      'ContextExtension lerp $min $max $minWidth $maxWidth w: $w => $result',
-    );
+    //XLog.i(
+    //  'ContextExtension lerp $min $max $minWidth $maxWidth w: $w => $result',
+    //);
     return result;
   }
 

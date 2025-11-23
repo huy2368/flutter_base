@@ -217,7 +217,13 @@ mixin VMMixin<V extends StatefulWidget, T extends ViewModel> on State<V> {
   }
 
   void _handleWatch() {
-    WidgetsBinding.instance.addPostFrameCallback((_) => setState(() {}));
+    if (!mounted) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      setState(() {});
+    });
   }
 }
 
