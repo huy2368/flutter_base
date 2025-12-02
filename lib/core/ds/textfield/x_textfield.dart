@@ -1,4 +1,3 @@
-import 'package:core/core.dart' show MergedValueNotifier;
 import 'package:core/core/extensions/context_extension.dart';
 import 'package:core/core/utils/_utils.dart' show XValidator;
 import 'package:easy_debounce/easy_debounce.dart';
@@ -258,7 +257,9 @@ class _XTextFieldState extends State<XTextField> {
           children: [
             SizedBox(
               height: widget.maxLines == null || widget.maxLines == 1
-                  ? 36
+                  ? context.xisPhone
+                        ? 36
+                        : 40
                   : null,
               child: TextFormField(
                 onTap: widget.onTap,

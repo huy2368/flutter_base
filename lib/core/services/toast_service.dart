@@ -9,6 +9,7 @@ enum ToastType { success, error, info, warning }
 
 class Toast {
   Toast._();
+  static String _lastMessage = '';
 
   static void show({
     String? title,
@@ -17,6 +18,8 @@ class Toast {
     String? debugInfo,
   }) {
     if (title?.isNotEmpty != true && description?.isNotEmpty != true) return;
+    if (title == _lastMessage) return;
+    _lastMessage = title ?? '';
     showOverlay(
       (context, t) {
         final toastTheme = Theme.of(context).extension<XToastTheme>();

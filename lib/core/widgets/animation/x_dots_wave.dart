@@ -34,7 +34,7 @@ class XDotsWaveState extends State<XDotsWave>
 
   double _dotSize = 24;
   double _dotSpacing = 4;
-  double _travelDistance = 32;
+  double _travelDistance = 16;
 
   @override
   void initState() {
@@ -75,9 +75,9 @@ class XDotsWaveState extends State<XDotsWave>
   }
 
   void _updateMetrics(BuildContext context) {
-    _dotSize = widget.dotSize ?? context.xlerp(min: 8, max: 16);
-    _dotSpacing = widget.dotSpacing ?? context.xlerp(min: 3, max: 6);
-    _travelDistance = widget.travelDistance ?? context.xlerp(min: 8, max: 16);
+    _dotSize = widget.dotSize ?? context.xlerp(min: 14, max: 16);
+    _dotSpacing = widget.dotSpacing ?? 2;
+    _travelDistance = widget.travelDistance ?? context.xlerp(min: 6, max: 8);
   }
 
   void _configureAnimations() {

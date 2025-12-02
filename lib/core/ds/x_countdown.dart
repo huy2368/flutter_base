@@ -38,7 +38,7 @@ class _XCountdownState extends State<XCountdown> {
   void initState() {
     super.initState();
     _style = widget.style;
-    _duration.value = widget.duration;
+    _duration.value = widget.duration < 0 ? 0 : widget.duration;
     if (!widget.forceStop) {
       _timer = Timer.periodic(const Duration(seconds: 1), (_) {
         if (_duration.value >= 1) {
@@ -66,7 +66,7 @@ class _XCountdownState extends State<XCountdown> {
     if (widget.forceStop == true) {
       _timer?.cancel();
       if (oldWidget.duration != widget.duration) {
-        _duration.value = widget.duration;
+        _duration.value = widget.duration < 0 ? 0 : widget.duration;
       }
     }
     if (oldWidget.style != widget.style) {

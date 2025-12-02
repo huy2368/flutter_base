@@ -3,7 +3,7 @@ import 'dart:convert' show base64Url, jsonDecode, jsonEncode, utf8;
 import 'dart:io' show Directory, File;
 
 import 'package:core/core.dart' show XLog;
-import 'package:flutter/foundation.dart' show ValueListenable;
+import 'package:flutter/foundation.dart' show ValueListenable, compute;
 import 'package:flutter/widgets.dart';
 import 'package:get_it/get_it.dart';
 
@@ -127,6 +127,57 @@ mixin VMCachedMixin on ViewModel {
     }
   }
 
+  Future<R?> fetchAndCache2<R>(
+    Future<R> Function() fetch, {
+    required String key,
+    required R Function(Map<String, dynamic>) fromJson,
+    required Map<String, dynamic> Function(R) toJson,
+  }) async {
+    try {
+      File? cacheFile = await _resolveCacheFile(key);
+      R? cachedData = await _readCachedData(cacheFile, fromJson);
+      if (cachedData != null) {
+        XLog.l('VMCachedStateMixin $key use data from cache');
+        fetch().then((data) {
+          final hasChanged = data != cachedData;
+          if (hasChanged) {
+            XLog.l('VMCachedStateMixin $key data has changed => write cache');
+            _writeCachedData(cacheFile, toJson, data);
+          }
+        });
+        return cachedData;
+      }
+
+      try {
+        final data = await fetch();
+        _writeCachedData(cacheFile, toJson, data);
+        return data;
+      } catch (e, st) {
+        XLog.e('VMCachedStateMixin $key fetch error: $e $st');
+        return null;
+      }
+    } catch (e, st) {
+      XLog.e('VMCachedStateMixin $key fetchAndCache2 $key error: $e $st');
+    }
+    return null;
+  }
+
+  bool isCached(String key) {
+    final safeKey = base64Url.encode(utf8.encode(key));
+    try {
+      final dir = _cacheDirectory ??= Directory(
+        '${Directory.systemTemp.path}/$_cacheDirName',
+      );
+      if (!dir.existsSync()) {
+        return false;
+      }
+      return File('${dir.path}/$safeKey.json').existsSync();
+    } catch (e, st) {
+      XLog.e('VMCachedStateMixin isCached error: $e $st');
+      return false;
+    }
+  }
+
   Future<File?> _resolveCacheFile(String key) async {
     final safeKey = base64Url.encode(utf8.encode(key));
     try {
@@ -152,7 +203,9 @@ mixin VMCachedMixin on ViewModel {
     }
     try {
       final raw = await file.readAsString();
-      return fromJson(jsonDecode(raw) as Map<String, dynamic>);
+      // Use compute to parse JSON in isolate for large files
+      final jsonMap = await compute(_parseJsonInIsolate, raw);
+      return fromJson(jsonMap);
     } catch (e, st) {
       XLog.e('VMCachedStateMixin read cache error: $e $st');
       return null;
@@ -207,7 +260,10 @@ mixin VMGetMixin<T extends ViewModel> {
 }
 
 mixin VMMixin<V extends StatefulWidget, T extends ViewModel> on State<V> {
-  final vm = GetIt.I.get<T>();
+  String? get instanceName => null;
+  late T vm = instanceName != null
+      ? GetIt.I.get<T>(instanceName: instanceName)
+      : GetIt.I.get<T>();
 
   void addNotifiers(List<ValueNotifier> notifiers) =>
       vm.addNotifiers(notifiers);
@@ -287,4 +343,9 @@ extension StreamSubscriptionMixin<T> on StreamSubscription<T> {
     vm.addStreamSubscription(this);
     return this;
   }
+}
+
+// Top-level function for parsing JSON in isolate
+Map<String, dynamic> _parseJsonInIsolate(String jsonString) {
+  return jsonDecode(jsonString) as Map<String, dynamic>;
 }

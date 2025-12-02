@@ -402,7 +402,6 @@ class _XDropDownState<T> extends State<XDropDown<T>>
                       : Expanded(
                           child: ListView.builder(
                             padding: EdgeInsets.zero,
-                            //shrinkWrap: true,
                             itemBuilder: (context, index) {
                               final option = filteredData.elementAt(index);
                               return InkWell(

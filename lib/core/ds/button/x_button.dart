@@ -41,10 +41,10 @@ class XButton extends StatefulWidget {
     this.onPressed,
     this.text,
     this.child,
-    this.size,
     this.style,
     this.showLoading,
     this.loadingWidget,
+    this.stretch = false,
   }) : assert(
          text != null || child != null,
          'Either text or child must be provided',
@@ -55,10 +55,10 @@ class XButton extends StatefulWidget {
   final FutureOr<void> Function()? onPressed;
   final String? text;
   final Widget? child;
-  final Size? size;
   final ButtonStyle? style;
   final bool? showLoading;
   final Widget? loadingWidget;
+  final bool stretch;
 
   factory XButton.small({
     Key? key,
@@ -70,6 +70,7 @@ class XButton extends StatefulWidget {
     bool showLoading = false,
     Widget? loadingWidget,
     bool showOverlay = false,
+    bool stretch = false,
   }) => XButton(
     buttonSize: EWidgetSize.small,
     variant: variant,
@@ -78,6 +79,7 @@ class XButton extends StatefulWidget {
     style: style,
     showLoading: showLoading,
     loadingWidget: loadingWidget,
+    stretch: stretch,
     child: child,
   );
 
@@ -90,6 +92,7 @@ class XButton extends StatefulWidget {
     ButtonStyle? style,
     bool showLoading = false,
     Widget? loadingWidget,
+    bool stretch = false,
   }) => XButton(
     buttonSize: EWidgetSize.medium,
     variant: variant,
@@ -98,6 +101,7 @@ class XButton extends StatefulWidget {
     style: style,
     showLoading: showLoading,
     loadingWidget: loadingWidget,
+    stretch: stretch,
     child: child,
   );
 
@@ -110,6 +114,7 @@ class XButton extends StatefulWidget {
     ButtonStyle? style,
     bool showLoading = false,
     Widget? loadingWidget,
+    bool stretch = false,
   }) => XButton(
     buttonSize: EWidgetSize.large,
     variant: variant,
@@ -118,6 +123,7 @@ class XButton extends StatefulWidget {
     style: style,
     showLoading: showLoading,
     loadingWidget: loadingWidget,
+    stretch: stretch,
     child: child,
   );
 
@@ -233,22 +239,17 @@ class _XButtonState extends State<XButton> {
           ? WidgetStateProperty.all(themePadding)
           : null,
       shape: themeShape != null ? WidgetStateProperty.all(themeShape) : null,
-      minimumSize: widget.size != null
-          ? WidgetStateProperty.all(Size(0, widget.size!.height))
-          : themeHeight != null
+      minimumSize: themeHeight != null
           ? WidgetStateProperty.all(
               Size(
-                themeStyle?.minimumSize?.resolve({})?.width ?? 0,
+                widget.stretch
+                    ? double.infinity
+                    : themeStyle?.minimumSize?.resolve({})?.width ?? 0,
                 themeHeight,
               ),
             )
           : null,
-      fixedSize: widget.size != null
-          ? WidgetStateProperty.all(widget.size)
-          : null,
-      maximumSize: widget.size != null
-          ? WidgetStateProperty.all(Size(double.infinity, widget.size!.height))
-          : themeHeight != null
+      maximumSize: themeHeight != null
           ? WidgetStateProperty.all(
               Size(
                 themeStyle?.maximumSize?.resolve({})?.width ?? 0,
@@ -269,7 +270,7 @@ class _XButtonState extends State<XButton> {
         ?.resolve({})
         ?.copyWith(fontSize: themeFontSize);
     XLog.l(
-      'effectiveStyle 2: ${effectiveStyle.padding}  ${widget.size} ${effectiveStyle.minimumSize} ${effectiveStyle.maximumSize} ${effectiveStyle.fixedSize} ${effectiveStyle.fixedSize}',
+      'effectiveStyle 2: ${effectiveStyle.padding} ${effectiveStyle.minimumSize} ${effectiveStyle.maximumSize} ${effectiveStyle.fixedSize} ${effectiveStyle.fixedSize}',
     );
     return effectiveStyle.copyWith(
       textStyle: WidgetStateProperty.all(textStyle),
