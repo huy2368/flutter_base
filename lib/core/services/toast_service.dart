@@ -105,6 +105,9 @@ class Toast {
       duration: const Duration(seconds: 3),
       context: null,
     );
+    Future.delayed(const Duration(seconds: 3), () {
+      _lastMessage = '';
+    });
   }
 
   //static void show({
