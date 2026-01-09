@@ -32,12 +32,14 @@ enum VersionUpdateStatus { none, optional, forced }
 
 class XPackageInfoUtils {
   static String? appVersion;
+  static String? buildNumber;
   static String? packageName;
 
   static Future<void> init() async {
     await PackageInfo.fromPlatform().then((value) {
       appVersion = value.version;
       packageName = value.packageName;
+      buildNumber = value.buildNumber;
       log('== app version');
     });
   }

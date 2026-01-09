@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:math' show min;
 
-import 'package:core/core.dart' show XLog;
 import 'package:core/core/ds/consts/enums.dart';
 import 'package:core/core/ds/consts/widget_size.dart';
 import 'package:core/core/ds/theme_extensions/button_theme_extension.dart';
@@ -144,47 +143,97 @@ class _XButtonState extends State<XButton> {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
+    _theme = Theme.of(context);
+    _buttonThemeExtension = _theme.extension<ButtonThemeExtension>();
+    final customStyle = _getButtonStyle();
+    final buttonContent = ValueListenableBuilder(
       valueListenable: _loadingNotifier,
-      builder: (context, isLoading, _) {
-        _theme = Theme.of(context);
-        _buttonThemeExtension = _theme.extension<ButtonThemeExtension>();
-        final customStyle = _getButtonStyle();
-        final buttonContent = _buildButtonContent(isLoading);
-
-        switch (widget.variant) {
-          case DSVariant.elevated:
-            return ElevatedButton(
-              onPressed: widget.onPressed == null ? null : _handleOnPressed,
-              style: customStyle,
-              child: buttonContent,
-            );
-          case DSVariant.outlined:
-            return OutlinedButton(
-              onPressed: widget.onPressed == null ? null : _handleOnPressed,
-              style: customStyle,
-              child: buttonContent,
-            );
-          case DSVariant.text:
-            return TextButton(
-              onPressed: widget.onPressed == null ? null : _handleOnPressed,
-              style: customStyle,
-              child: buttonContent,
-            );
-          case DSVariant.filled:
-            return FilledButton(
-              onPressed: _handleOnPressed,
-              style: customStyle,
-              child: buttonContent,
-            );
-          case DSVariant.icon:
-            return IconButton(
-              onPressed: widget.onPressed == null ? null : _handleOnPressed,
-              style: customStyle,
-              icon: buttonContent,
-            );
-        }
+      builder: (context, isLoading, child) {
+        if (isLoading) return Opacity(opacity: 0, child: child);
+        return child ?? const SizedBox.shrink();
       },
+      child: widget.child ?? Text(widget.text ?? ''),
+    );
+    Widget button;
+    switch (widget.variant) {
+      case DSVariant.elevated:
+        button = ElevatedButton(
+          onPressed: widget.onPressed == null ? null : _handleOnPressed,
+          style: customStyle,
+          child: buttonContent,
+        );
+      case DSVariant.outlined:
+        button = OutlinedButton(
+          onPressed: widget.onPressed == null ? null : _handleOnPressed,
+          style: customStyle,
+          child: buttonContent,
+        );
+      case DSVariant.text:
+        button = TextButton(
+          onPressed: widget.onPressed == null ? null : _handleOnPressed,
+          style: customStyle,
+          child: buttonContent,
+        );
+      case DSVariant.filled:
+        button = FilledButton(
+          onPressed: _handleOnPressed,
+          style: customStyle,
+          child: buttonContent,
+        );
+      case DSVariant.icon:
+        button = IconButton(
+          onPressed: widget.onPressed == null ? null : _handleOnPressed,
+          style: customStyle,
+          icon: buttonContent,
+        );
+    }
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        button,
+        Positioned(
+          left: 0,
+          right: 0,
+          child: ValueListenableBuilder<bool>(
+            valueListenable: _loadingNotifier,
+            builder: (context, isLoading, child) {
+              if (!isLoading) return const SizedBox.shrink();
+              //XLog.l(
+              //  '==huy loadingWidget ${widget.loadingWidget != null} ${_buttonThemeExtension?.loadingWidget != null}',
+              //);
+              return child ?? const SizedBox.shrink();
+            },
+            child: Center(
+              child:
+                  widget.loadingWidget ??
+                  _buttonThemeExtension?.loadingWidget ??
+                  LayoutBuilder(
+                    builder: (_, constraints) {
+                      final loadingHeight = min(
+                        constraints.maxHeight * 2 / 3,
+                        24.0,
+                      );
+                      final loadingIndicator = SizedBox(
+                        width: loadingHeight,
+                        height: loadingHeight,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: _getLoadingColor(),
+                        ),
+                      );
+                      if (!constraints.hasBoundedWidth) {
+                        return Center(child: loadingIndicator);
+                      }
+                      return SizedBox(
+                        width: constraints.maxWidth,
+                        child: Center(child: loadingIndicator),
+                      );
+                    },
+                  ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -234,6 +283,9 @@ class _XButtonState extends State<XButton> {
         themeStyle = _theme.iconButtonTheme.style;
         break;
     }
+    //XLog.l(
+    //  'themeStyle: ${themeStyle?.minimumSize} ${themeStyle?.maximumSize} ${themeStyle?.fixedSize} ${themeStyle?.fixedSize} themeHeight $themeHeight',
+    //);
     final extensionStyle = ButtonStyle(
       padding: themePadding != null
           ? WidgetStateProperty.all(themePadding)
@@ -242,9 +294,7 @@ class _XButtonState extends State<XButton> {
       minimumSize: themeHeight != null
           ? WidgetStateProperty.all(
               Size(
-                widget.stretch
-                    ? double.infinity
-                    : themeStyle?.minimumSize?.resolve({})?.width ?? 0,
+                themeStyle?.minimumSize?.resolve({})?.width ?? 0,
                 themeHeight,
               ),
             )
@@ -269,9 +319,9 @@ class _XButtonState extends State<XButton> {
     final textStyle = effectiveStyle.textStyle
         ?.resolve({})
         ?.copyWith(fontSize: themeFontSize);
-    XLog.l(
-      'effectiveStyle 2: ${effectiveStyle.padding} ${effectiveStyle.minimumSize} ${effectiveStyle.maximumSize} ${effectiveStyle.fixedSize} ${effectiveStyle.fixedSize}',
-    );
+    //XLog.l(
+    //  'effectiveStyle 2: ${effectiveStyle.padding} ${effectiveStyle.minimumSize?.resolve({})} ${effectiveStyle.maximumSize?.resolve({})} ${effectiveStyle.fixedSize?.resolve({})} ${effectiveStyle.fixedSize?.resolve({})}',
+    //);
     return effectiveStyle.copyWith(
       textStyle: WidgetStateProperty.all(textStyle),
       // text button prefer text style color from foreground color instead of textStyle color
@@ -281,6 +331,14 @@ class _XButtonState extends State<XButton> {
                   widget.variant == DSVariant.filled) &&
               textStyle?.color != null
           ? WidgetStateProperty.all(textStyle!.color)
+          : null,
+      minimumSize: widget.stretch
+          ? WidgetStateProperty.all(
+              Size(
+                double.infinity,
+                effectiveStyle.minimumSize?.resolve({})?.height ?? 0,
+              ),
+            )
           : null,
     );
   }
@@ -295,42 +353,5 @@ class _XButtonState extends State<XButton> {
       case DSVariant.text:
         return _theme.colorScheme.primary;
     }
-  }
-
-  Widget _buildButtonContent(bool isLoading) {
-    if (isLoading) {
-      return widget.loadingWidget ??
-          _buttonThemeExtension?.loadingWidget ??
-          LayoutBuilder(
-            builder: (_, constraints) {
-              final loadingHeight = min(constraints.maxHeight * 2 / 3, 24.0);
-              final loadingIndicator = SizedBox(
-                width: loadingHeight,
-                height: loadingHeight,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: _getLoadingColor(),
-                ),
-              );
-              if (!constraints.hasBoundedWidth) {
-                return Center(child: loadingIndicator);
-              }
-              return SizedBox(
-                width: constraints.maxWidth,
-                child: Center(child: loadingIndicator),
-              );
-            },
-          );
-    }
-
-    if (widget.child != null) {
-      return widget.child!;
-    }
-
-    if (widget.text != null) {
-      return Text(widget.text!);
-    }
-
-    return const SizedBox.shrink();
   }
 }

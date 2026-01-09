@@ -1,16 +1,13 @@
 import 'dart:async';
 import 'dart:math' show max;
 
-import 'package:core/core.dart' show navigatorKey;
+import 'package:core/core.dart' show navigatorKey, DialogThemeExtension;
 import 'package:flutter/material.dart';
 
 class DialogConsts {
   static const double defaultMaxWidth = 480;
   static const double defaultMaxHeight = 600;
   static const dialogBackgroundColor = Colors.white;
-  static const dialogShape = RoundedRectangleBorder(
-    borderRadius: BorderRadius.all(Radius.circular(20)),
-  );
   static const dialogPadding = EdgeInsets.fromLTRB(24, 32, 24, 32);
   static const dialogInsetsPadding = EdgeInsets.all(16);
   static const dialogCloseButtonPadding = EdgeInsets.fromLTRB(16, 12, 12, 4);
@@ -83,6 +80,8 @@ class XDialog extends StatelessWidget {
   final double maxWidth;
   final double maxHeight;
 
+  static bool _isShowing = false;
+  static bool get isShowing => _isShowing;
   static Future<T?> show<T>({
     required XDialog dialog,
     bool useSafeArea = true,
@@ -99,6 +98,7 @@ class XDialog extends StatelessWidget {
       'navigatorKey.currentContext is null',
     );
     if (navigatorKey.currentContext == null) return null;
+    _isShowing = true;
     dynamic result;
     onShow?.call();
     final name = routeName ?? dialog.hashCode.toString();
@@ -118,6 +118,7 @@ class XDialog extends StatelessWidget {
       routeSettings: RouteSettings(name: name),
     );
     onClose?.call(result);
+    _isShowing = false;
     return result;
   }
 
@@ -145,31 +146,35 @@ class XDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget? closeChild, iconChild, titleChild, contentChild, buttonsChild;
+    Widget? resolvedCloseButton,
+        iconChild,
+        titleChild,
+        contentChild,
+        buttonsChild;
     final dialogTheme = DialogTheme.of(context);
-    if (isDismissible && closeButton != null) {
-      closeChild = Align(
-        alignment: Alignment.topRight,
-        child: GestureDetector(
-          onTap: closeButton == null ? () => Navigator.pop(context) : null,
-          behavior: HitTestBehavior.opaque,
-          child: Padding(
-            padding: DialogConsts.dialogCloseButtonPadding,
-            child: SizedBox(
-              width: 24,
-              height: 24,
-              child: FittedBox(child: closeButton),
+    final dialogExtension = Theme.of(context).extension<DialogThemeExtension>();
+    if (isDismissible) {
+      resolvedCloseButton = closeButton ?? dialogExtension?.closeButton;
+      if (resolvedCloseButton != null) {
+        resolvedCloseButton = Align(
+          alignment: Alignment.topRight,
+          child: GestureDetector(
+            onTap: () => Navigator.pop(context),
+            behavior: HitTestBehavior.opaque,
+            child: Padding(
+              padding: DialogConsts.dialogCloseButtonPadding,
+              child: FittedBox(child: resolvedCloseButton),
             ),
           ),
-        ),
-      );
+        );
+      }
     }
 
     if (icon != null) {
       final resolvedIconPadding = iconPadding ?? DialogConsts.dialogIconPadding;
       iconChild = Padding(
         padding: resolvedIconPadding.copyWith(
-          top: closeChild != null
+          top: resolvedCloseButton != null
               ? max(
                   resolvedIconPadding.top -
                       DialogConsts.dialogCloseButtonPadding.bottom,
@@ -194,6 +199,7 @@ class XDialog extends StatelessWidget {
             ? Text(
                 title!,
                 textAlign: center ? TextAlign.center : TextAlign.left,
+                style: dialogTheme.titleTextStyle,
               )
             : titleWidget,
       );
@@ -205,6 +211,7 @@ class XDialog extends StatelessWidget {
             ? Text(
                 content!,
                 textAlign: center ? TextAlign.center : TextAlign.left,
+                style: dialogTheme.contentTextStyle,
               )
             : contentWidget,
       );
@@ -243,8 +250,9 @@ class XDialog extends StatelessWidget {
     }
 
     final resolvedPadding = padding.copyWith(
-      top: closeChild != null
-          ? max(padding.top - DialogConsts.dialogCloseButtonPadding.top, 0)
+      top: resolvedCloseButton != null
+          ? 0
+          //? max(padding.top - DialogConsts.dialogCloseButtonPadding.top, 0)
           : iconChild != null
           ? max(padding.top - DialogConsts.dialogIconPadding.top, 0)
           : null,
@@ -263,7 +271,7 @@ class XDialog extends StatelessWidget {
                 ? CrossAxisAlignment.center
                 : CrossAxisAlignment.start,
             children: [
-              if (closeChild != null) closeChild,
+              ?resolvedCloseButton,
               Flexible(
                 child: SingleChildScrollView(
                   padding: EdgeInsets.only(
@@ -296,14 +304,17 @@ class XDialog extends StatelessWidget {
         shadowColor: shadowColor,
         elevation: elevation,
         surfaceTintColor: surfaceTintColor,
-        shape: shape ?? dialogTheme.shape ?? DialogConsts.dialogShape,
+        shape: shape ?? dialogTheme.shape,
         insetPadding:
             insetPadding ??
             dialogTheme.insetPadding ??
             DialogConsts.dialogInsetsPadding,
         alignment: alignment ?? dialogTheme.alignment,
         child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: maxWidth, maxHeight: maxHeight),
+          constraints: BoxConstraints(
+            maxWidth: dialogExtension?.maxWidth ?? maxWidth,
+            maxHeight: maxHeight,
+          ),
           child: Padding(
             padding: EdgeInsets.only(
               top: resolvedPadding.top,
@@ -315,7 +326,7 @@ class XDialog extends StatelessWidget {
                   ? CrossAxisAlignment.center
                   : CrossAxisAlignment.start,
               children: [
-                if (closeChild != null) closeChild,
+                ?resolvedCloseButton,
                 Flexible(
                   child: SingleChildScrollView(
                     padding: EdgeInsets.only(

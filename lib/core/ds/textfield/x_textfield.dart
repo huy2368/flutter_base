@@ -254,6 +254,7 @@ class _XTextFieldState extends State<XTextField> {
         final hasError = _errorText.value?.isNotEmpty ?? false;
         return Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
               height: widget.maxLines == null || widget.maxLines == 1
@@ -312,9 +313,8 @@ class _XTextFieldState extends State<XTextField> {
               ),
             ),
             if (hasError)
-              Container(
-                padding: const EdgeInsets.only(top: 8, left: 16),
-                alignment: Alignment.centerLeft,
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
                 child: Text(
                   _errorText.value ?? '',
                   maxLines: inputTheme.errorMaxLines,

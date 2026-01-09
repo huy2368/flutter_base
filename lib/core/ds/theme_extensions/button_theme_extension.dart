@@ -20,12 +20,16 @@ class ButtonThemeExtension extends ThemeExtension<ButtonThemeExtension> {
 
   @override
   ButtonThemeExtension copyWith({
+    bool? showLoading,
+    Widget? loadingWidget,
     Map<EWidgetSize, double>? heights,
     Map<EWidgetSize, EdgeInsets>? paddings,
     Map<EWidgetSize, OutlinedBorder>? shapes,
     Map<EWidgetSize, double>? fontSizes,
   }) {
     return ButtonThemeExtension(
+      showLoading: showLoading ?? this.showLoading,
+      loadingWidget: loadingWidget ?? this.loadingWidget,
       heights: heights ?? this.heights,
       paddings: paddings ?? this.paddings,
       shapes: shapes ?? this.shapes,
@@ -41,6 +45,8 @@ class ButtonThemeExtension extends ThemeExtension<ButtonThemeExtension> {
     if (other is! ButtonThemeExtension) return this;
 
     return ButtonThemeExtension(
+      showLoading: t < 0.5 ? showLoading : other.showLoading,
+      loadingWidget: t < 0.5 ? loadingWidget : other.loadingWidget,
       heights: _lerpDoubleMap(heights, other.heights, t),
       paddings: _lerpEdgeInsetsMap(paddings, other.paddings, t),
       shapes: shapes, // Shapes don't lerp well, so we keep the current one

@@ -1,12 +1,13 @@
 import 'dart:math';
 
-import 'package:core/core/utils/x_log.dart';
+import 'package:core/core.dart';
 import 'package:flutter/material.dart';
 
 // A wrapper widget that handles the measurement logic.
 class XUniformHeightGridView extends StatefulWidget {
   final List<Widget> children;
   final int? crossAxisCount;
+  final bool forceRatio;
   final double? minItemWidth;
   final double? maxItemWidth;
   final double mainAxisSpacing;
@@ -20,6 +21,7 @@ class XUniformHeightGridView extends StatefulWidget {
     super.key,
     required this.children,
     this.crossAxisCount,
+    this.forceRatio = true,
     this.minItemWidth,
     this.maxItemWidth,
     this.mainAxisSpacing = 8.0,
@@ -45,6 +47,7 @@ class _XUniformHeightGridViewState extends State<XUniformHeightGridView> {
   double? _maxHeight;
   // Retry counter for measurement
   int _measurementRetries = 0;
+  int _effectiveCrossAxisCount = 0;
 
   @override
   void initState() {
@@ -59,7 +62,13 @@ class _XUniformHeightGridViewState extends State<XUniformHeightGridView> {
     _keys = List.generate(widget.children.length, (_) => GlobalKey());
   }
 
-  void _measureItems() {
+  void _measureItems([bool force = false]) {
+    if (_effectiveCrossAxisCount == 1 &&
+        widget.trailing == null &&
+        !force &&
+        !widget.forceRatio) {
+      return;
+    }
     XLog.l(
       'XUniformHeightGridView _measureItems _measurementRetries $_measurementRetries',
     );
@@ -114,7 +123,9 @@ class _XUniformHeightGridViewState extends State<XUniformHeightGridView> {
         oldWidget.crossAxisSpacing != widget.crossAxisSpacing) {
       _generateKeys();
       _measurementRetries = 0; // Reset retry counter
-      WidgetsBinding.instance.addPostFrameCallback((_) => _measureItems());
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _measureItems(context.xisLandscape),
+      );
     }
   }
 
@@ -140,9 +151,8 @@ class _XUniformHeightGridViewState extends State<XUniformHeightGridView> {
             : constraints.maxWidth;
 
         // Tính toán crossAxisCount dựa trên minItemWidth/maxItemWidth hoặc sử dụng giá trị cố định
-        final int effectiveCrossAxisCount;
         if (widget.crossAxisCount != null) {
-          effectiveCrossAxisCount = widget.crossAxisCount!;
+          _effectiveCrossAxisCount = widget.crossAxisCount!;
         } else {
           // Tính toán dựa trên minItemWidth và maxItemWidth
           final minWidth = widget.minItemWidth!;
@@ -173,16 +183,16 @@ class _XUniformHeightGridViewState extends State<XUniformHeightGridView> {
             }
           }
 
-          effectiveCrossAxisCount = calculatedColumns;
+          _effectiveCrossAxisCount = calculatedColumns;
         }
 
         // Grid tiles width as used by GridView with crossAxisSpacing between tiles
         final tileWidth =
             (availableWidth -
-                (widget.crossAxisSpacing * (effectiveCrossAxisCount - 1))) /
-            effectiveCrossAxisCount;
+                (widget.crossAxisSpacing * (_effectiveCrossAxisCount - 1))) /
+            _effectiveCrossAxisCount;
         XLog.l(
-          'XUniformHeightGridView _keys maxWidth ${constraints.maxWidth} trailingWidth ${widget.trailingWidth} availableWidth $availableWidth effectiveCrossAxisCount $effectiveCrossAxisCount tileWidth $tileWidth _maxHeight $_maxHeight',
+          'XUniformHeightGridView _keys maxWidth ${constraints.maxWidth} trailingWidth ${widget.trailingWidth} availableWidth $availableWidth effectiveCrossAxisCount $_effectiveCrossAxisCount tileWidth $tileWidth _maxHeight $_maxHeight',
         );
         final offstageChild = Offstage(
           offstage: true,
@@ -201,7 +211,16 @@ class _XUniformHeightGridViewState extends State<XUniformHeightGridView> {
             mainAxisSize: MainAxisSize.min,
             children: [
               offstageChild,
-              if (_maxHeight != null)
+
+              if (_effectiveCrossAxisCount == 1 && !widget.forceRatio)
+                Column(
+                  spacing: widget.mainAxisSpacing,
+                  mainAxisSize: MainAxisSize.min,
+                  children: widget.children
+                      .map((e) => SizedBox(width: double.infinity, child: e))
+                      .toList(),
+                )
+              else if (_maxHeight != null)
                 GridView.builder(
                   primary: false,
                   shrinkWrap: widget.shrinkWrap,
@@ -209,7 +228,7 @@ class _XUniformHeightGridViewState extends State<XUniformHeightGridView> {
                       ? null
                       : const NeverScrollableScrollPhysics(),
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: effectiveCrossAxisCount,
+                    crossAxisCount: _effectiveCrossAxisCount,
                     mainAxisSpacing: widget.mainAxisSpacing,
                     crossAxisSpacing: widget.crossAxisSpacing,
                     childAspectRatio: tileWidth / _maxHeight!,
@@ -223,7 +242,7 @@ class _XUniformHeightGridViewState extends State<XUniformHeightGridView> {
             ],
           );
         }
-        final totalRows = (widget.children.length / effectiveCrossAxisCount)
+        final totalRows = (widget.children.length / _effectiveCrossAxisCount)
             .ceil();
         return Column(
           mainAxisSize: MainAxisSize.min,
@@ -235,24 +254,31 @@ class _XUniformHeightGridViewState extends State<XUniformHeightGridView> {
                 spacing: widget.crossAxisSpacing,
                 children: [
                   Expanded(
-                    child: GridView.builder(
-                      primary: false,
-                      shrinkWrap: widget.shrinkWrap,
-                      physics: widget.isScrollable
-                          ? null
-                          : const NeverScrollableScrollPhysics(),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: effectiveCrossAxisCount,
-                        mainAxisSpacing: widget.mainAxisSpacing,
-                        crossAxisSpacing: widget.crossAxisSpacing,
-                        childAspectRatio: tileWidth / _maxHeight!,
-                      ),
-                      padding: EdgeInsets.zero,
-                      itemCount: widget.children.length,
-                      itemBuilder: (context, index) {
-                        return widget.children[index];
-                      },
-                    ),
+                    child: _effectiveCrossAxisCount == 1 && !widget.forceRatio
+                        ? Column(
+                            spacing: widget.mainAxisSpacing,
+                            mainAxisSize: MainAxisSize.min,
+                            children: widget.children,
+                          )
+                        : GridView.builder(
+                            primary: false,
+                            shrinkWrap: widget.shrinkWrap,
+                            physics: widget.isScrollable
+                                ? null
+                                : const NeverScrollableScrollPhysics(),
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: _effectiveCrossAxisCount,
+                                  mainAxisSpacing: widget.mainAxisSpacing,
+                                  crossAxisSpacing: widget.crossAxisSpacing,
+                                  childAspectRatio: tileWidth / _maxHeight!,
+                                ),
+                            padding: EdgeInsets.zero,
+                            itemCount: widget.children.length,
+                            itemBuilder: (context, index) {
+                              return widget.children[index];
+                            },
+                          ),
                   ),
                   Center(
                     child: SizedBox(

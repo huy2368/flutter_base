@@ -4,7 +4,6 @@ import 'package:align_dialog/align_dialog.dart';
 import 'package:core/core.dart';
 import 'package:flutter/material.dart';
 import 'package:substring_highlight/substring_highlight.dart';
-import 'package:tiengviet/tiengviet.dart';
 
 class XDropDownModel<T> {
   final String? label;
@@ -136,7 +135,6 @@ class _XDropDownState<T> extends State<XDropDown<T>>
   }
 
   /// Kiểm tra xem một chuỗi có chứa một chuỗi tìm kiếm hay không.
-  /// Sử dụng thư viện TiengViet để loại bỏ các ký tự đặc biệt
   /// và chuyển cả hai chuỗi thành chữ thường trước khi so sánh.
   bool _contains(String? source, String? searchText) {
     // If search text is empty, show all items
@@ -147,9 +145,7 @@ class _XDropDownState<T> extends State<XDropDown<T>>
     if (source?.isEmpty ?? true) {
       return false;
     }
-    return TiengViet.parse(
-      source!.toLowerCase(),
-    ).toLowerCase().contains(TiengViet.parse(searchText!.toLowerCase()));
+    return source!.toLowerCase().contains(searchText!.toLowerCase());
   }
 
   /// Phương thức này được gọi khi widget được cập nhật.

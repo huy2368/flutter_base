@@ -1,4 +1,4 @@
-package com.example.core
+package org.edutex.core
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -1,11 +1,9 @@
 import 'dart:async';
-import 'dart:developer';
 
 import 'package:flutter/services.dart';
-//import 'package:native_device_orientation/native_device_orientation.dart';
 
 class XDeviceOrientation {
-  static const platform = MethodChannel('com.mini_ielts_app.device_orientation');
+  static const platform = MethodChannel('org.edutex.pte.device_orientation');
   static DeviceOrientation orientation = DeviceOrientation.portraitUp;
   static DeviceOrientation sensorOrientation = DeviceOrientation.portraitUp;
   static final sensorOrientationStream =
@@ -26,42 +24,14 @@ class XDeviceOrientation {
         _mapOrientation(orientationInInt);
       }
     });
-    try {
-    //  NativeDeviceOrientationCommunicator()
-    //      .onOrientationChanged(useSensor: true)
-    //      .listen((value) {
-    //    _mapSensorOrientation(value);
-    //    sensorOrientationStream.add(sensorOrientation);
-    //  });
-    } catch (e) {
-      log('XDeviceOrientation ex $e');
-    }
   }
 
   static Future<bool> setPortrait(bool isPortrait) async {
-    final result =
-        await platform.invokeMethod('setPortrait', {'is_portrait': isPortrait});
+    final result = await platform.invokeMethod('setPortrait', {
+      'is_portrait': isPortrait,
+    });
     return result == true;
   }
-
-  //static void _mapSensorOrientation(NativeDeviceOrientation nOrientation) {
-  //  switch (nOrientation) {
-  //    case NativeDeviceOrientation.portraitUp:
-  //      sensorOrientation = DeviceOrientation.portraitUp;
-  //      break;
-  //    case NativeDeviceOrientation.portraitDown:
-  //      sensorOrientation = DeviceOrientation.portraitDown;
-  //      break;
-  //    case NativeDeviceOrientation.landscapeLeft:
-  //      sensorOrientation = DeviceOrientation.landscapeLeft;
-  //      break;
-  //    case NativeDeviceOrientation.landscapeRight:
-  //      sensorOrientation = DeviceOrientation.landscapeRight;
-  //      break;
-  //    default:
-  //      sensorOrientation = DeviceOrientation.portraitUp;
-  //  }
-  //}
 
   static void _mapOrientation(int orientationInInt) {
     switch (orientationInInt) {

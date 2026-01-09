@@ -14,9 +14,22 @@ class XDevice {
   static PackageInfo? packageInfo;
   static IosDeviceInfo? iosInfo;
   static AndroidDeviceInfo? androidInfo;
+  Map<String, dynamic>? shortDeviceInfo;
 
   void init() async {
     _userAgent = await getUserAgent();
+    final deviceInfo = await getDeviceInfo();
+    shortDeviceInfo = {
+      'id': deviceInfo['id'],
+      'name': deviceInfo['name'] ?? deviceInfo['manufacturer'],
+      'systemName': deviceInfo['systemName'] ?? deviceInfo['utsname.sysname:'],
+      'systemVersion':
+          deviceInfo['systemVersion'] ?? deviceInfo['version.release'],
+      'model': deviceInfo['model'] ?? deviceInfo['utsname.machine:'],
+      'isPhysicalDevice': deviceInfo['isPhysicalDevice'],
+      'buildId': deviceInfo['buildId'],
+      'supported64BitAbis': deviceInfo['supported64BitAbis'],
+    };
   }
 
   Future<String?> get userAgent async => _userAgent ??= await getUserAgent();

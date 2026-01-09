@@ -108,21 +108,23 @@ extension DurationExtension on int? {
     String? hourSuffix,
     String? minuteSuffix,
     String? secondSuffix,
+    bool removeHourIfZero = true,
+    bool removeMinuteIfZero = false,
   }) {
     if (this == null || this! < 0) return '';
 
     final hours = this! ~/ XConsts.hourInSecond;
-    final hourTxt = hours > 0
-        ? '${'$hours'.padLeft(2, '0')}${hourSuffix ?? ''}$separator'
-        : '';
+    final hourTxt = removeHourIfZero && hours <= 0
+        ? ''
+        : '${'$hours'.padLeft(2, '0')}${hourSuffix ?? ''}$separator';
     final int remainder = this! % XConsts.hourInSecond;
     final minutes = remainder ~/ XConsts.minuteInSecond;
-    final minuteTxt =
-        '${'$minutes'.padLeft(2, '0')}${minuteSuffix ?? ''}$separator';
+    final minuteTxt = removeMinuteIfZero && minutes <= 0
+        ? ''
+        : '${'$minutes'.padLeft(2, '0')}${minuteSuffix ?? ''}$separator';
     final seconds = remainder % XConsts.minuteInSecond;
     final secondTxt = '${'$seconds'.padLeft(2, '0')}${secondSuffix ?? ''}';
 
     return '$hourTxt$minuteTxt$secondTxt';
   }
-
 }

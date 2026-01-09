@@ -45,12 +45,19 @@ extension ContextExtensionMediaQuery on BuildContext {
 
   double get xmargin {
     if (XPlatform.isAndroid || XPlatform.isIOS) {
+      final portrait = xisPortrait;
       return xlerp(
         min: 13,
-        max: xisPhone || xisPortrait ? 32 : 64,
+        max: xisPhone
+            ? portrait
+                  ? 16
+                  : 32
+            : portrait
+            ? 32
+            : 64,
         width: xwidth,
         minWidth: 375,
-        maxWidth: 810,
+        maxWidth: xisPhone && portrait ? 390 : 810,
       );
     }
     return xlerp(
