@@ -1,6 +1,3 @@
-import 'dart:developer';
-
-import 'package:align_dialog/align_dialog.dart';
 import 'package:core/core.dart';
 import 'package:flutter/material.dart';
 import 'package:substring_highlight/substring_highlight.dart';
@@ -73,6 +70,7 @@ class XDropDown<T> extends StatefulWidget {
     this.menuHeight,
     this.menuWidth,
     this.menuOffset,
+    this.shrinkWrapMenu = false,
     this.onFocused,
     this.dropdownSize = EWidgetSize.medium,
     this.style,
@@ -80,7 +78,7 @@ class XDropDown<T> extends StatefulWidget {
     this.iconSize,
     this.menuShape,
     this.enabled = true,
-    this.showSearch = true,
+    this.showSearch = false,
   });
 
   final List<XDropDownModel<T>> data;
@@ -92,6 +90,7 @@ class XDropDown<T> extends StatefulWidget {
   final double? menuHeight;
   final double? menuWidth;
   final Offset? menuOffset;
+  final bool shrinkWrapMenu;
   final void Function(FocusNode)? onFocused;
   final EWidgetSize dropdownSize;
   final BoxDecoration? style;
@@ -108,6 +107,8 @@ class XDropDown<T> extends StatefulWidget {
 class _XDropDownState<T> extends State<XDropDown<T>>
     with SingleTickerProviderStateMixin {
   final GlobalKey _key = GlobalKey();
+  final OverlayPortalController _overlayController = OverlayPortalController();
+
   // Biến để lưu trữ giá trị hiện tại của hộp tìm kiếm.
   // Giá trị này được cập nhật mỗi khi người dùng chọn một tùy chọn từ dropdown hoặc thay đổi nội dung trong hộp tìm kiếm.
   String _currentValue = '';
@@ -160,13 +161,18 @@ class _XDropDownState<T> extends State<XDropDown<T>>
   @override
   void didUpdateWidget(covariant XDropDown<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
-    log('==huy didUpdateWidget ${oldWidget.placeholderText} $_currentValue');
     if (widget.placeholderText != null &&
         widget.placeholderText != _currentValue) {
       setState(() {
         _currentValue = widget.placeholderText ?? '';
       });
     }
+  }
+
+  void _hideDropdown() {
+    _isFocused.value = false;
+    _expandAnimationController.reverse();
+    _overlayController.hide();
   }
 
   @override
@@ -177,13 +183,43 @@ class _XDropDownState<T> extends State<XDropDown<T>>
     super.dispose();
   }
 
+  /// Effective menu offset (user > theme > default).
+  Offset get _effectiveMenuOffset =>
+      widget.menuOffset ??
+      _dropdownThemeExtension?.menuOffsets[widget.dropdownSize] ??
+      Offset.zero;
+
   @override
   Widget build(BuildContext context) {
     _theme = Theme.of(context);
     _dropdownThemeExtension = _theme.extension<XDropdownThemeExtension>();
-    return GestureDetector(
-      onTap: widget.enabled ? _showDropdown : null,
-      child: _buildDropdownField(),
+    return OverlayPortal.overlayChildLayoutBuilder(
+      controller: _overlayController,
+      overlayChildBuilder: (context, info) {
+        final menuWidth = widget.menuWidth ?? info.childSize.width;
+        final translation = info.childPaintTransform.getTranslation();
+        final left = translation.x + _effectiveMenuOffset.dx;
+        final top =
+            translation.y + info.childSize.height + _effectiveMenuOffset.dy;
+        return Stack(
+          children: [
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: _hideDropdown,
+            ),
+            Positioned(
+              left: left,
+              top: top,
+              width: menuWidth,
+              child: _buildOptionsView(menuWidth, _hideDropdown),
+            ),
+          ],
+        );
+      },
+      child: GestureDetector(
+        onTap: widget.enabled ? _showDropdown : null,
+        child: _buildDropdownField(),
+      ),
     );
   }
 
@@ -243,6 +279,7 @@ class _XDropDownState<T> extends State<XDropDown<T>>
         return Container(
           key: _key,
           height: effectiveHeight,
+          width: widget.menuWidth,
           padding: effectivePadding,
           decoration: effectiveDecoration,
           child: Row(
@@ -270,45 +307,17 @@ class _XDropDownState<T> extends State<XDropDown<T>>
   }
 
   void _showDropdown() {
-    // Don't show dropdown if disabled
     if (!widget.enabled) return;
 
     _isFocused.value = true;
     _expandAnimationController.forward();
-    double menuWidth;
-    if (widget.menuWidth == null) {
-      final renderBox = _key.currentContext?.findRenderObject() as RenderBox;
-      menuWidth = renderBox.size.width;
-    } else {
-      menuWidth = widget.menuWidth!;
-    }
-
-    // Get effective menu offset with priority: user > theme > default
-    final effectiveMenuOffset =
-        widget.menuOffset ??
-        _dropdownThemeExtension?.menuOffsets[widget.dropdownSize] ??
-        Offset.zero;
-
-    showAlignedDialog(
-      context: context,
-      barrierColor: Colors.transparent,
-      followerAnchor: Alignment.topLeft,
-      targetAnchor: Alignment.bottomLeft,
-      offset: effectiveMenuOffset,
-      avoidOverflow: true,
-      builder: (context) {
-        return _buildOptionsView(menuWidth);
-      },
-    ).whenComplete(() {
-      _isFocused.value = false;
-      _expandAnimationController.reverse();
-    });
+    _overlayController.show();
   }
 
   /// Xây dựng giao diện cho tùy chọn của dropdown.
   /// Giao diện này được hiển thị khi người dùng tương tác với dropdown.
   /// Nó chứa danh sách các tùy chọn mà người dùng có thể chọn.
-  Widget _buildOptionsView(double width) {
+  Widget _buildOptionsView(double width, VoidCallback onClose) {
     final dropdownMenuTheme = _theme.dropdownMenuTheme;
 
     // Get theme values for menu with DropdownMenuThemeData as fallback
@@ -364,7 +373,10 @@ class _XDropDownState<T> extends State<XDropDown<T>>
 
             return Container(
               width: width,
-              constraints: effectiveMenuHeight != null
+              constraints:
+                  !widget.shrinkWrapMenu &&
+                      effectiveMenuHeight != null &&
+                      effectiveMenuHeight.isFinite
                   ? BoxConstraints(maxHeight: effectiveMenuHeight)
                   : null,
               decoration: BoxDecoration(
@@ -395,8 +407,9 @@ class _XDropDownState<T> extends State<XDropDown<T>>
                             ),
                           ),
                         )
-                      : Expanded(
+                      : Flexible(
                           child: ListView.builder(
+                            shrinkWrap: widget.shrinkWrapMenu,
                             padding: EdgeInsets.zero,
                             itemBuilder: (context, index) {
                               final option = filteredData.elementAt(index);
@@ -404,8 +417,8 @@ class _XDropDownState<T> extends State<XDropDown<T>>
                                 onTap: () {
                                   _currentValue = option.label ?? '';
                                   widget.onSelected(option);
-                                  Navigator.of(context).pop();
                                   _searchController.text = '';
+                                  onClose();
                                 },
                                 borderRadius: BorderRadius.circular(8),
                                 child: Padding(

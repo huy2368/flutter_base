@@ -8,6 +8,6 @@ export 'core/navigator_key.dart';
 export 'core/services/_services.dart';
 export 'core/utils/_utils.dart';
 export 'core/widgets/_widgets.dart';
-export 'core/x_app.dart';
+export 'core/x_ui.dart';
 export 'core/x_app_config.dart';
 export 'core/x_debug.dart';

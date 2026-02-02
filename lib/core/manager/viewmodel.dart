@@ -15,6 +15,8 @@ class ViewModel extends Object {
   final _notifiers = <ValueNotifier, VoidCallback?>{};
   final _listenables = <Listenable>[];
   final _streamSubscriptions = <StreamSubscription>[];
+  bool _isDisposed = false;
+  bool get isDisposed => _isDisposed;
 
   void onInit() {
     WidgetsBinding.instance.addPostFrameCallback((_) => onReady());
@@ -30,6 +32,8 @@ class ViewModel extends Object {
 
   @mustCallSuper
   void dispose() {
+    if (_isDisposed) return;
+    _isDisposed = true;
     for (var e in _streamSubscriptions) {
       e.cancel();
     }

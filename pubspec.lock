@@ -9,14 +9,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "88.0.0"
-  align_dialog:
-    dependency: "direct main"
-    description:
-      name: align_dialog
-      sha256: "27a8ee371eabe14417757f5e15bc34e27ec7a35f16f810fd0ed556604a8b4f63"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.0"
   analyzer:
     dependency: transitive
     description:

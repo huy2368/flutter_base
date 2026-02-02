@@ -1,7 +1,6 @@
 import 'dart:developer' show log;
 import 'dart:io' show Platform;
 
-import 'package:core/core.dart' show XLog;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -27,28 +26,31 @@ class XSystemChromeUtils {
     bool hideStatusBar = false,
     bool hideNavigationBar = false,
   }) async {
-    await SystemChrome.setEnabledSystemUIMode(
-      hideStatusBar || hideNavigationBar
-          ? SystemUiMode.immersiveSticky
-          : SystemUiMode.edgeToEdge,
-      overlays: [
-        if (!hideNavigationBar) SystemUiOverlay.top,
-        if (!hideStatusBar) SystemUiOverlay.bottom,
-      ],
-    );
-    //SystemChrome.setSystemUIOverlayStyle(
-    //  const SystemUiOverlayStyle(
-    //    statusBarColor: Colors.transparent,
-    //    statusBarIconBrightness: Brightness.dark,
-    //    statusBarBrightness: Brightness.dark,
-    //  ),
-    //);
+    try {
+      await SystemChrome.setEnabledSystemUIMode(
+        hideStatusBar || hideNavigationBar
+            ? SystemUiMode.immersiveSticky
+            : SystemUiMode.edgeToEdge,
+        overlays: [
+          if (!hideNavigationBar) SystemUiOverlay.top,
+          if (!hideStatusBar) SystemUiOverlay.bottom,
+        ],
+      );
+    } catch (ex) {
+      log('XSystemChromeUtils setupUIMode error $ex');
+    }
   }
 
   static void setupSystemUIOverlayStyle({
     SystemUiOverlayStyle style = SystemUiOverlayStyle.dark,
   }) {
-    SystemChrome.setSystemUIOverlayStyle(style);
+    try {
+      SystemChrome.setSystemUIOverlayStyle(
+        style.copyWith(statusBarColor: Colors.transparent),
+      );
+    } catch (ex) {
+      log('XSystemChromeUtils setupSystemUIOverlayStyle error $ex');
+    }
   }
 
   static Future<void> toggleFullscreen(bool isFullscreen) async {

@@ -46,7 +46,6 @@ dependencies:
   just_audio:
   flutter_svg:
   shared_preferences:
-  align_dialog:
   substring_highlight:
   tiengviet:
   permission_handler:

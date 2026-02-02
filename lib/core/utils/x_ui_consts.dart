@@ -12,7 +12,7 @@ class XUIConsts {
   static const Size lgDesignSize = Size(1440, 1024); // desktop
   static final double lgContentWidth = lgDesignSize.width - lgHMargin * 2;
 
-  static final _phoneFontSize = 13.0;
+  static final _phoneFontSize = 14.0;
   static final _tabletFontSize = 16.0;
   static double fontSize(BuildContext context) =>
       context.xisPhone ? _phoneFontSize : _tabletFontSize;
