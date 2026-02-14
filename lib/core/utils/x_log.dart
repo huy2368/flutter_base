@@ -6,9 +6,9 @@ import 'package:logging/logging.dart';
 class XLog {
   static void init() {
     Logger.root.level = kDebugMode ? Level.ALL : Level.WARNING;
-    //Logger.root.onRecord.listen((record) {
-    //  log('${record.level.name} - ${record.time} | ${record.message}');
-    //});
+    Logger.root.onRecord.listen((record) {
+      log('${record.level.name} - ${record.time} | ${record.message}');
+    });
   }
 
   /// verbose

@@ -35,7 +35,7 @@ class AudioSessionService {
   final audioPlayer = AudioPlayer(
     handleInterruptions: true,
     androidApplyAudioAttributes: true,
-    handleAudioSessionActivation: true,
+    handleAudioSessionActivation: false,
     useProxyForRequestHeaders: false,
   );
 
@@ -58,12 +58,12 @@ class AudioSessionService {
               AVAudioSessionCategoryOptions.allowAirPlay |
               AVAudioSessionCategoryOptions.mixWithOthers |
               AVAudioSessionCategoryOptions.defaultToSpeaker,
-          avAudioSessionMode: AVAudioSessionMode.defaultMode,
+          avAudioSessionMode: AVAudioSessionMode.videoRecording,
           avAudioSessionRouteSharingPolicy:
               AVAudioSessionRouteSharingPolicy.defaultPolicy,
           avAudioSessionSetActiveOptions: AVAudioSessionSetActiveOptions.none,
           androidAudioAttributes: AndroidAudioAttributes(
-            contentType: AndroidAudioContentType.speech,
+            contentType: AndroidAudioContentType.music,
             flags: AndroidAudioFlags.none,
             usage: AndroidAudioUsage.media,
           ),
@@ -299,9 +299,6 @@ class AudioSessionService {
     audioPlayer.playingStream.listen((playing) {
       XLog.l('Audio playing: $playing');
       playInterrupted = false;
-      if (playing) {
-        audioSession.setActive(true);
-      }
     });
     audioSession.interruptionEventStream.listen((event) {
       XLog.l('Audio interruption begin: ${event.begin}');

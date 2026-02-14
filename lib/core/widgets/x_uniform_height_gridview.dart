@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 // A wrapper widget that handles the measurement logic.
 class XUniformHeightGridView extends StatefulWidget {
   final List<Widget> children;
+  final Widget? biggestChild;
   final int? crossAxisCount;
   final bool forceRatio;
   final double? minItemWidth;
@@ -20,6 +21,7 @@ class XUniformHeightGridView extends StatefulWidget {
   const XUniformHeightGridView({
     super.key,
     required this.children,
+    this.biggestChild,
     this.crossAxisCount,
     this.forceRatio = true,
     this.minItemWidth,
@@ -59,7 +61,10 @@ class _XUniformHeightGridViewState extends State<XUniformHeightGridView> {
   }
 
   void _generateKeys() {
-    _keys = List.generate(widget.children.length, (_) => GlobalKey());
+    _keys = List.generate(
+      widget.biggestChild != null ? 1 : widget.children.length,
+      (_) => GlobalKey(),
+    );
   }
 
   void _measureItems([bool force = false]) {
@@ -197,21 +202,28 @@ class _XUniformHeightGridViewState extends State<XUniformHeightGridView> {
         final offstageChild = Offstage(
           offstage: true,
           child: Wrap(
-            children: List.generate(widget.children.length, (index) {
-              return SizedBox(
-                width: tileWidth,
-                key: _keys[index],
-                child: widget.children[index],
-              );
-            }),
+            children: widget.biggestChild != null
+                ? [
+                    SizedBox(
+                      width: tileWidth,
+                      key: _keys[0],
+                      child: widget.biggestChild!,
+                    ),
+                  ]
+                : List.generate(widget.children.length, (index) {
+                    return SizedBox(
+                      width: tileWidth,
+                      key: _keys[index],
+                      child: widget.children[index],
+                    );
+                  }),
           ),
         );
         if (widget.trailing == null) {
           return Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              offstageChild,
-
+              if (widget.forceRatio) offstageChild,
               if (_effectiveCrossAxisCount == 1 && !widget.forceRatio)
                 Column(
                   spacing: widget.mainAxisSpacing,
@@ -220,7 +232,7 @@ class _XUniformHeightGridViewState extends State<XUniformHeightGridView> {
                       .map((e) => SizedBox(width: double.infinity, child: e))
                       .toList(),
                 )
-              else if (_maxHeight != null)
+              else if (_maxHeight != null && _maxHeight! > 0)
                 GridView.builder(
                   primary: false,
                   shrinkWrap: widget.shrinkWrap,

@@ -6,33 +6,16 @@ import 'package:core/core.dart' show navigatorKey;
 import 'package:core/core/extensions/string_extension.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/widgets.dart'
-    show
-        WidgetsBindingObserver,
-        WidgetsBinding,
-        AppLifecycleState,
-        NetworkImage,
-        FileImage,
-        ImageProvider,
-        precacheImage,
-        ImageConfiguration,
-        Size;
+    show NetworkImage, FileImage, ImageProvider, precacheImage, Size;
 import 'package:http_cache_stream/http_cache_stream.dart'
     show HttpCacheManager, GlobalCacheConfig;
-import 'package:just_audio/just_audio.dart';
 import 'package:path_provider/path_provider.dart';
-
-enum ImageCacheSize {
-  none, // no limit
-  fullscreen, // fullscreen content
-  expanded, // expanded content
-  normal, // normal content
-}
 
 /// This service can be used to cache content for learning section, not for long term storage.
 /// The cache is stored in the application's cache directory.
 /// The cache is cleared when the section is completed.
-class NodeCacheService {
-  NodeCacheService() {
+class CacheService {
+  CacheService() {
     _initCacheManager();
   }
 
@@ -46,7 +29,6 @@ class NodeCacheService {
       config: GlobalCacheConfig(
         cacheDirectory: _cacheDirectory!,
         rangeRequestSplitThreshold: 1024 * 1024 * 2, // 2MB
-        //onCacheDone: _handleHttpCacheDone,
         validateOutdatedCache: true,
       ),
     );
@@ -59,19 +41,13 @@ class NodeCacheService {
   final _audioUrlCache = <String, bool>{};
   // Map contains its video or image urls and a set of tags
   // Used to manage and clear cache by tag
-  final _videoTagMap = <String, Set<String>>{};
-  final _imageTagMap = <String, Set<String>>{};
+  final _tagMap = <String, List<String>>{};
   final _keepAliveList = <String>{};
-  //final _keepAliveCacheManager = CacheManager(
-  //  Config('node_keep_alive_cache', stalePeriod: const Duration(days: 30)),
-  //);
-  //CacheManager get keepAliveCacheManager => _keepAliveCacheManager;
+  final _fileQueue = <String>{};
 
-  final imageCacheSizeMap = <ImageCacheSize, Size>{};
   bool useMpvPlayer = false;
 
   /// for Debug if any image / video is not dispose at the end
-  final _cachedUrlSet = <String>{};
   final videoDownloadSpeedMap = <String, String>{};
 
   bool isImageCached(String imageUrl) {
@@ -86,9 +62,32 @@ class NodeCacheService {
     return _audioUrlCache.containsKey(audioUrl.trim());
   }
 
+  void setFileQueue(List<String> urls, {String? tag}) {
+    _fileQueue
+      ..clear()
+      ..addAll(urls);
+    for (final url in urls) {
+      _registerTag(url.trim(), tag);
+    }
+  }
+
+  void removeFromFileQueue(String url) {
+    _fileQueue.remove(url);
+  }
+
+  void clearFileQueue() {
+    _fileQueue.clear();
+  }
+
   Future<void> refreshLocalServerCache() async {
     log('NodeCacheService: refreshLocalServerCache');
-    await HttpCacheManager.instance.dispose();
+    try {
+      await HttpCacheManager.instance.dispose();
+    } catch (e) {
+      log(
+        'NodeCacheService: Error disposing HttpCacheManager (may not be initialized): $e',
+      );
+    }
     await _initCacheManager();
     final videoUrls = _videoUrlCacheMap.keys.toList();
     _videoUrlCacheMap.clear();
@@ -99,7 +98,7 @@ class NodeCacheService {
         keepAlive: keepAlive,
         looping: keepAlive,
         volume: keepAlive ? 0 : null,
-        tag: _videoTagMap[url]?.firstOrNull,
+        tag: _tagMap[url]?.firstOrNull,
       );
     }
   }
@@ -107,6 +106,14 @@ class NodeCacheService {
   ImageProvider? getImageCacheUrl(String imageUrl) {
     final url = imageUrl.trim();
     if (url.isEmpty) return null;
+    if (_keepAliveList.contains(url)) {
+      final uri = Uri.tryParse(url);
+      if (uri == null) return null;
+      final cachedInfo = HttpCacheManager.instance.getCacheFiles(uri);
+      if (cachedInfo.complete.existsSync()) {
+        return FileImage(cachedInfo.complete);
+      }
+    }
     final stream = _imageCacheMap[url];
     log('NodeCacheService: image cache hit ${stream != null} $url');
     return stream;
@@ -121,6 +128,32 @@ class NodeCacheService {
   Future<void> preCacheAudio(String? audioUrl, {String? tag}) async {
     // TODO: later cache audio override previous audio
     return;
+    // ignore: dead_code
+    if (audioUrl?.isNotEmpty != true) {
+      log('NodeCacheService: preCacheAudio called with empty URL.');
+      return;
+    }
+    if (_audioUrlCache.containsKey(audioUrl)) {
+      log('NodeCacheService: Audio $audioUrl is already in cache.');
+      return;
+    }
+    try {
+      final uri = Uri.tryParse(audioUrl!);
+      if (uri == null) {
+        log('NodeCacheService: Invalid audio URL: $audioUrl');
+        return;
+      }
+
+      // Mark as cached after successful preload
+      _audioUrlCache[audioUrl] = true;
+      log(
+        'NodeCacheService: Audio $audioUrl successfully preloaded and cached.',
+      );
+    } catch (e) {
+      log(
+        'NodeCacheService: Error during pre-caching audio for $audioUrl: $e.',
+      );
+    }
   }
 
   Future<void> preCacheVideos(
@@ -137,17 +170,56 @@ class NodeCacheService {
     List<String?> urls, {
     bool keepAlive = false,
     String? tag,
+    Size? size,
   }) async {
     for (var url in urls) {
-      preCacheImage(url, keepAlive: keepAlive, tag: tag);
+      preCacheImage(url, keepAlive: keepAlive, tag: tag, size: size);
     }
+  }
+
+  Future<void> downloadFiles(List<String> urls) async {
+    for (var url in urls) {
+      await downloadFile(url);
+    }
+  }
+
+  Future<File?> downloadFile(String url) async {
+    final trimmedUrl = url.trim();
+    if (trimmedUrl.isEmpty || !trimmedUrl.isURL) return null;
+    final uri = Uri.tryParse(trimmedUrl);
+    if (uri == null) return null;
+
+    try {
+      _keepAliveList.add(trimmedUrl);
+      return await HttpCacheManager.instance.preCacheUrl(uri);
+    } catch (e) {
+      log('NodeCacheService: File Error during downloading $trimmedUrl: $e.');
+    }
+    return null;
+  }
+
+  File? getCachedFile(String url) {
+    final trimmedUrl = url.trim();
+    if (trimmedUrl.isEmpty || !trimmedUrl.isURL) return null;
+    final uri = Uri.tryParse(trimmedUrl);
+    if (uri == null) return null;
+
+    try {
+      final cachedInfo = HttpCacheManager.instance.getCacheFiles(uri);
+      if (cachedInfo.complete.existsSync()) {
+        return cachedInfo.complete;
+      }
+    } catch (e) {
+      log('NodeCacheService: Error getting cached file for $trimmedUrl: $e.');
+    }
+    return null;
   }
 
   Future<void> preCacheImage(
     String? imageUrl, {
     bool keepAlive = false,
     String? tag,
-    ImageCacheSize? size,
+    Size? size,
   }) async {
     final url = imageUrl?.trim();
     if (url == null || url.isEmpty) {
@@ -155,50 +227,35 @@ class NodeCacheService {
       return;
     }
     final uri = Uri.tryParse(url);
-    if (uri == null) return;
-    log('NodeCacheService: Image $url is pre caching');
-    if (_imageCacheMap.containsKey(url)) {
-      log('NodeCacheService: Image $url is already in cache map');
-      _cachedUrlSet.add(url);
-      _registerImageTag(url, tag);
+    if (uri == null) {
+      log('NodeCacheService: Invalid image URL: $url');
       return;
     }
-    final cacheSize = imageCacheSizeMap[size];
+    log('NodeCacheService: Image $url is pre caching');
+    _registerTag(url, tag);
+    if (_imageCacheMap.containsKey(url)) {
+      log('NodeCacheService: Image $url is already in cache map');
+      return;
+    }
     if (keepAlive) {
+      _keepAliveList.add(url);
       final cachedInfo = HttpCacheManager.instance.getCacheFiles(uri);
       if (cachedInfo.complete.existsSync()) {
-        _keepAliveList.add(url);
         final provider = FileImage(cachedInfo.complete);
         _imageCacheMap[url] = provider;
-        precacheImage(provider, navigatorKey.currentContext!, size: cacheSize);
-        _cachedUrlSet.add(url);
-        _registerImageTag(url, tag);
+        precacheImage(provider, navigatorKey.currentContext!, size: size);
         log(
-          'NodeCacheService: Image $url restored from keepAlive cache. ${cachedInfo.complete.path}',
+          'NodeCacheService: Image $url restored from keepAlive cache. ${cachedInfo.complete.path} ',
         );
         return;
       }
     }
-    final start = DateTime.now();
     try {
       final provider = NetworkImage(url);
-      precacheImage(provider, navigatorKey.currentContext!, size: cacheSize);
+      precacheImage(provider, navigatorKey.currentContext!, size: size);
       _imageCacheMap[url] = provider;
-      _cachedUrlSet.add(url);
-      _registerImageTag(url, tag);
-      provider.obtainCacheStatus(configuration: ImageConfiguration.empty).then((
-        e,
-      ) {
-        log(
-          'NodeCacheService: Image $url is cached done. ${e.toString()} ${DateTime.now().difference(start).inMilliseconds}ms',
-        );
-      });
-      log('NodeCacheService: Image $url is cached done');
     } catch (e) {
-      log('NodeCacheService: Error during pre-caching for $url: $e.');
-      if (keepAlive) {
-        _keepAliveList.remove(url);
-      }
+      log('NodeCacheService: Image Error during pre-caching for $url: $e.');
     }
   }
 
@@ -216,30 +273,53 @@ class NodeCacheService {
     }
     final uri = Uri.tryParse(url);
     if (uri == null) return;
-    final cacheFile = HttpCacheManager.instance.getCacheFiles(uri);
     if (keepAlive) {
       _keepAliveList.add(url);
     }
-    _registerVideoTag(url, tag);
+    if (_videoUrlCacheMap.containsKey(url)) return;
+    _registerTag(url, tag);
+    final cacheFile = HttpCacheManager.instance.getCacheFiles(uri);
     if (cacheFile.complete.existsSync()) {
       log(
-        '==huyhuy NodeCacheService: Video $videoUrl is already cached in cache file ${cacheFile.complete.path} keepAlive $keepAlive',
+        'NodeCacheService: Video $videoUrl tag $tag is already cached in cache file ${cacheFile.complete.path} keepAlive $keepAlive ${_videoUrlCacheMap.length} stream ${HttpCacheManager.instance.allStreams.where((e) => !e.isDisposed).length}',
       );
       _videoUrlCacheMap[url] = Uri.file(cacheFile.complete.path);
+      videoDownloadSpeedMap[url] = 'CACHED';
       return;
     }
     final stream = HttpCacheManager.instance.createStream(uri)..download();
+    _videoUrlCacheMap[url] = stream.cacheUrl;
     final startTime = DateTime.now();
     StreamSubscription<double?>? progressSubscription;
     progressSubscription = stream.progressStream.listen(
       (event) {
         if (event != null && event >= 1) {
+          log(
+            'NodeCacheService: Video $videoUrl is cached done. Switching to localfile. keepAlive $keepAlive all streams ${HttpCacheManager.instance.allStreams.length} downloading ${HttpCacheManager.instance.allStreams.where((e) => e.isDownloading).length} ${_videoUrlCacheMap.containsKey(url)}',
+          );
           if (_videoUrlCacheMap.containsKey(url)) {
             _videoUrlCacheMap[url] = Uri.file(stream.cacheFile.path);
           }
-          log(
-            '==huyhuy NodeCacheService: Video $videoUrl is cached done. $event ${stream.cacheFile.path} keepAlive $keepAlive',
-          );
+          progressSubscription?.cancel();
+          final downloadingStreamsLength = HttpCacheManager.instance.allStreams
+              .where((e) => e.isDownloading)
+              .length;
+          if (downloadingStreamsLength < 2) {
+            final nextUrl = _fileQueue.firstOrNull;
+            if (nextUrl != null) {
+              log(
+                'NodeCacheService: done $url Pre-caching next video $nextUrl in queue $_fileQueue',
+              );
+              preCacheVideo(
+                nextUrl,
+                keepAlive: false,
+                looping: looping,
+                volume: volume,
+                tag: tag,
+              );
+              removeFromFileQueue(nextUrl);
+            }
+          }
         }
         _calculateDownloadSpeed(
           url,
@@ -262,25 +342,6 @@ class NodeCacheService {
         }
       },
     );
-    _videoUrlCacheMap[url] = stream.cacheUrl;
-  }
-
-  Future<void> predownloadFile(
-    String? videoUrl, {
-    bool keepAlive = false,
-  }) async {
-    final url = videoUrl?.trim();
-    if (url == null || url.isEmpty) {
-      log('NodeCacheService: preCacheVideo called with empty URL.');
-      return;
-    }
-    final uri = Uri.tryParse(url);
-    if (uri == null) return;
-    if (keepAlive) {
-      _keepAliveList.add(url);
-    }
-    HttpCacheManager.instance.preCacheUrl(uri);
-    log('NodeCacheService: predownloadFile keepAlive $keepAlive');
   }
 
   /// Remove audio URL from cache
@@ -291,40 +352,41 @@ class NodeCacheService {
     }
   }
 
-  void _registerVideoTag(String url, String? tag) {
+  void _registerTag(String url, String? tag) {
     final tagValue = tag?.trim();
     if (tagValue == null || tagValue.isEmpty) {
       return;
     }
-    final tagSet = _videoTagMap.putIfAbsent(url, () => <String>{});
-    tagSet.add(tagValue);
+    final tagSet = _tagMap.putIfAbsent(url, () => <String>[]);
+    if (!tagSet.contains(tagValue)) {
+      tagSet.add(tagValue);
+    }
   }
 
-  void _registerImageTag(String url, String? tag) {
-    final tagValue = tag?.trim();
-    if (tagValue == null || tagValue.isEmpty) {
-      return;
+  void _removeFirstTag(String url) {
+    final tagSet = _tagMap[url.trim()];
+    if (tagSet != null && tagSet.isNotEmpty) {
+      tagSet.removeAt(0);
     }
-    final tagSet = _imageTagMap.putIfAbsent(url, () => <String>{});
-    tagSet.add(tagValue);
   }
 
   void disposeImage(String imageUrl) {
-    if (imageUrl.isEmpty) return;
-    final tags = _imageTagMap[imageUrl];
+    final url = imageUrl.trim();
+    if (url.isEmpty) return;
+    final tags = _tagMap[url];
     if (tags != null && tags.length > 1) {
       log(
-        'NodeCacheService: disposeImage skipped for $imageUrl because of multiple tags $tags',
+        'NodeCacheService: disposeImage skipped for $url because of multiple tags $tags',
       );
+      _removeFirstTag(url);
       return;
     }
-    final imageProvider = _imageCacheMap[imageUrl];
+    final imageProvider = _imageCacheMap[url];
     if (imageProvider != null) {
       imageProvider.evict();
-      _imageCacheMap.remove(imageUrl);
-      _cachedUrlSet.remove(imageUrl);
-      _imageTagMap.remove(imageUrl);
-      log('NodeCacheService: disposeImage $imageUrl');
+      _imageCacheMap.remove(url);
+      _tagMap.remove(url);
+      log('NodeCacheService: disposeImage $url');
     }
   }
 
@@ -335,42 +397,57 @@ class NodeCacheService {
   }
 
   Future<void> disposeVideo(String videoUrl, {bool deleteFile = false}) async {
-    if (videoUrl.isEmpty) return;
-    final tags = _videoTagMap[videoUrl];
+    final url = videoUrl.trim();
+    if (url.isEmpty) return;
+    final tags = _tagMap[url];
     if (tags != null && tags.length > 1) {
       log(
-        'NodeCacheService: disposeVideo skipped for $videoUrl because of multiple tags $tags',
+        'NodeCacheService: disposeVideo skipped for $url because of multiple tags $tags',
       );
+      _removeFirstTag(url);
       return;
     }
-    if (_videoUrlCacheMap.containsKey(videoUrl)) {
-      _cachedUrlSet.remove(videoUrl);
-      _videoTagMap.remove(videoUrl);
-      if (_keepAliveList.contains(videoUrl)) {
-        return;
-      }
+    final length = _videoUrlCacheMap.length;
+
+    if (_videoUrlCacheMap.containsKey(url)) {
       try {
-        final cachedUri = _videoUrlCacheMap[videoUrl];
-        _videoUrlCacheMap.remove(videoUrl);
-        HttpCacheManager.instance.getExistingStream(cachedUri!)?.dispose();
-        if (deleteFile && cachedUri.scheme.startsWith('http') == false) {
-          File(cachedUri.path).deleteSync();
+        final uri = Uri.tryParse(url);
+        if (uri == null) return;
+        _videoUrlCacheMap.remove(url);
+        log(
+          'NodeCacheService: disposeVideo $url stream ${HttpCacheManager.instance.getExistingStream(uri) != null ? 'exists' : 'not exists'}',
+        );
+        HttpCacheManager.instance.getExistingStream(uri)?.dispose();
+        if (deleteFile &&
+            !_keepAliveList.contains(url) &&
+            uri.scheme.startsWith('http') == false) {
+          File(uri.path).deleteSync();
         }
       } catch (e, st) {
-        log(
-          'NodeCacheService: Error during disposeVideo $videoUrl for $e. $st',
-        );
+        log('NodeCacheService: Error during disposeVideo $url for $e. $st');
       }
     }
+    log(
+      'NodeCacheService: disposeVideo $url stream ${HttpCacheManager.instance.allStreams.where((e) => !e.isDisposed).length} contain ${_videoUrlCacheMap.containsKey(url)} before $length after ${_videoUrlCacheMap.length} ${_videoUrlCacheMap.keys}',
+    );
   }
 
   void dispose() {
-    HttpCacheManager.instance.dispose();
+    try {
+      videoDownloadSpeedMap.clear();
+      _fileQueue.clear();
+      _videoUrlCacheMap.clear();
+      _imageCacheMap.clear();
+      _audioUrlCache.clear();
+      _tagMap.clear();
+      _keepAliveList.clear();
+      HttpCacheManager.instance.dispose();
+    } catch (e) {
+      log('NodeCacheService: Error during dispose: $e');
+    }
   }
 
   void clearCache({bool deleteAllDirectory = false}) {
-    videoDownloadSpeedMap.clear();
-    final oldCachedUrlSet = _cachedUrlSet.toList();
     if (deleteAllDirectory) {
       _keepAliveList.clear();
     }
@@ -381,30 +458,25 @@ class NodeCacheService {
     for (var e in imageCaches) {
       try {
         log('NodeCacheService: disposeImage ${e.key} in map');
-        _imageTagMap.remove(e.key);
-        _cachedUrlSet.remove(e.key);
+        _tagMap.remove(e.key);
       } catch (ex) {
         log('NodeCacheService: Error during disposeImage for $ex.');
       }
     }
     _audioUrlCache.removeWhere((key, value) => !_keepAliveList.contains(key));
-    if (deleteAllDirectory) {}
     log(
       'NodeCacheService: clearCache done deleteAllDirectory $deleteAllDirectory  _keepAliveList $_keepAliveList image ${_imageCacheMap.length}',
     );
-    log(
-      'NodeCacheService: Cached URLs snapshot: $_cachedUrlSet previous: $oldCachedUrlSet',
-    );
-    oldCachedUrlSet.clear();
-    _videoUrlCacheMap.clear();
-    if (_cacheDirectory != null) _deleteDirectorySafely(_cacheDirectory!);
+    if (_cacheDirectory != null) {
+      _deleteDirectorySafely(_cacheDirectory!, force: deleteAllDirectory);
+    }
   }
 
   /// Xóa thư mục một cách an toàn với retry mechanism
   /// Xóa các file trong _cacheDirectory trừ:
   /// - Files có URL trong _keepAliveList (không bao giờ xóa)
   /// - Files khác có last access <= 7 ngày (giữ lại)
-  void _deleteDirectorySafely(Directory directory) {
+  void _deleteDirectorySafely(Directory directory, {bool force = false}) {
     if (!directory.existsSync()) {
       log('NodeCacheService: Directory does not exist: ${directory.path}');
       return;
@@ -413,29 +485,31 @@ class NodeCacheService {
     try {
       // Build set of file paths that must be kept (from _keepAliveList)
       final filesToKeep = <String>{};
+      if (!force) {
+        // Mark all files from _keepAliveList as must keep (never delete)
+        for (final url in _keepAliveList) {
+          try {
+            final uri = Uri.tryParse(url);
+            if (uri == null) continue;
 
-      // Mark all files from _keepAliveList as must keep (never delete)
-      for (final url in _keepAliveList) {
-        try {
-          final uri = Uri.tryParse(url);
-          if (uri == null) continue;
-
-          final cacheFile = HttpCacheManager.instance.getCacheFiles(uri);
-          if (cacheFile.complete.existsSync()) {
-            filesToKeep.add(cacheFile.complete.path);
+            final cacheFile = HttpCacheManager.instance.getCacheFiles(uri);
+            if (cacheFile.complete.existsSync()) {
+              filesToKeep.add(cacheFile.complete.path);
+            }
+            if (cacheFile.partial.existsSync()) {
+              filesToKeep.add(cacheFile.partial.path);
+            }
+            if (cacheFile.metadata.existsSync()) {
+              filesToKeep.add(cacheFile.metadata.path);
+            }
+            log('NodeCacheService: Marked files as keep (keepAlive): $url');
+          } catch (e) {
+            log(
+              'NodeCacheService: Error checking keepAlive cache for $url: $e',
+            );
           }
-          if (cacheFile.partial.existsSync()) {
-            filesToKeep.add(cacheFile.partial.path);
-          }
-          if (cacheFile.metadata.existsSync()) {
-            filesToKeep.add(cacheFile.metadata.path);
-          }
-          log('NodeCacheService: Marked files as keep (keepAlive): $url');
-        } catch (e) {
-          log('NodeCacheService: Error checking keepAlive cache for $url: $e');
         }
       }
-
       // Iterate through all files in directory
       // Delete files not in keepAlive list if last access > 7 days
       final files = directory.listSync(recursive: true);
@@ -461,17 +535,11 @@ class NodeCacheService {
                   .inDays;
 
               // Delete if over 7 days
-              if (daysSinceAccess > 7) {
+              if (daysSinceAccess > 7 || force) {
                 file.deleteSync();
                 deletedCount++;
-                log(
-                  'NodeCacheService: Deleted file (over 7 days): $filePath (accessed $daysSinceAccess days ago)',
-                );
               } else {
                 keptCount++;
-                log(
-                  'NodeCacheService: Keeping file (<= 7 days): $filePath (accessed $daysSinceAccess days ago)',
-                );
               }
             } catch (e) {
               // If we can't read last access, delete as orphaned
@@ -488,12 +556,10 @@ class NodeCacheService {
       }
 
       log(
-        '==huyhuy NodeCacheService: Cleanup complete. Kept $keptCount files, deleted $deletedCount files',
+        'NodeCacheService: Cleanup complete. Kept $keptCount files, deleted $deletedCount files',
       );
     } catch (e) {
-      log(
-        '==huyhuy NodeCacheService: Failed to delete directory ${directory.path}: $e',
-      );
+      log('NodeCacheService: Failed to delete directory ${directory.path}: $e');
     }
   }
 
@@ -504,7 +570,7 @@ class NodeCacheService {
       return;
     }
     final imageTargets = <String>[];
-    final imageEntries = _imageTagMap.entries.toList();
+    final imageEntries = _tagMap.entries.toList();
     for (final entry in imageEntries) {
       final tags = entry.value;
       if (!tags.contains(tagValue)) {
@@ -512,7 +578,7 @@ class NodeCacheService {
       }
       if (tags.length == 1) {
         imageTargets.add(entry.key);
-        _imageTagMap.remove(entry.key);
+        _tagMap.remove(entry.key);
       } else {
         tags.remove(tagValue);
       }
@@ -520,43 +586,6 @@ class NodeCacheService {
     for (final url in imageTargets) {
       disposeImage(url);
     }
-    final videoTargets = <String>[];
-    final videoEntries = _videoTagMap.entries.toList();
-    for (final entry in videoEntries) {
-      final tags = entry.value;
-      if (!tags.contains(tagValue)) {
-        continue;
-      }
-      if (tags.length == 1) {
-        videoTargets.add(entry.key);
-        _videoTagMap.remove(entry.key);
-      } else {
-        tags.remove(tagValue);
-      }
-    }
-    for (final url in videoTargets) {
-      _keepAliveList.remove(url);
-      await disposeVideo(url);
-    }
-  }
-
-  void updateImageTargetSize({
-    required double normalWidth,
-    required double normalHeight,
-    required double expandedWidth,
-    required double expandedHeight,
-    required double fullscreenWidth,
-    required double fullscreenHeight,
-  }) {
-    imageCacheSizeMap[ImageCacheSize.normal] = Size(normalWidth, normalHeight);
-    imageCacheSizeMap[ImageCacheSize.expanded] = Size(
-      expandedWidth,
-      expandedHeight,
-    );
-    imageCacheSizeMap[ImageCacheSize.fullscreen] = Size(
-      fullscreenWidth,
-      fullscreenHeight,
-    );
   }
 
   // debug
@@ -579,9 +608,6 @@ class NodeCacheService {
       final elapsedSeconds =
           DateTime.now().difference(startTime).inMilliseconds / 1000;
       if (elapsedSeconds < 10 && progress < 1) return;
-      log(
-        'NodeCacheService: Download speed for $videoUrl: $elapsedSeconds $progress $sourceLength',
-      );
       final downloadedBytes = (sourceLength * progress).round();
       final speedBytesPerSecond = downloadedBytes / elapsedSeconds;
 

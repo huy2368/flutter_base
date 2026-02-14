@@ -18,6 +18,7 @@ class XImage extends StatefulWidget {
     this.borderRadius,
     this.showZoomImage = true,
     this.onTap,
+    this.autoEvict = true,
   }) : assert(
          imageUrl != null || imagePath != null,
          'Either imageUrl or imagePath must be provided',
@@ -34,6 +35,7 @@ class XImage extends StatefulWidget {
   final BorderRadius? borderRadius;
   final bool showZoomImage;
   final VoidCallback? onTap;
+  final bool autoEvict;
 
   @override
   State<XImage> createState() => _XImageState();
@@ -79,11 +81,13 @@ class XImage extends StatefulWidget {
 class _XImageState extends State<XImage> {
   @override
   void dispose() {
-    if (widget.imageUrl != null) {
-      NetworkImage(widget.imageUrl!).evict();
-    }
-    if (widget.imagePath != null) {
-      AssetImage(widget.imagePath!).evict();
+    if (widget.autoEvict) {
+      if (widget.imageUrl?.isNotEmpty == true) {
+        NetworkImage(widget.imageUrl!).evict();
+      }
+      if (widget.imagePath?.isNotEmpty == true) {
+        AssetImage(widget.imagePath!).evict();
+      }
     }
     super.dispose();
   }
