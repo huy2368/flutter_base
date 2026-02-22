@@ -14,7 +14,7 @@ class XHtml extends StatelessWidget {
     this.html, {
     this.style = const {},
     this.fontFamily,
-    this.fontWeight = FontWeight.w400,
+    this.fontWeight,
     this.fontSize = 14,
     this.lineHeight = 1.5,
     this.fontColor,
@@ -26,7 +26,7 @@ class XHtml extends StatelessWidget {
 
   final String? html;
   final String? fontFamily;
-  final FontWeight fontWeight;
+  final FontWeight? fontWeight;
   final double fontSize;
   final double lineHeight;
   final Color? fontColor;
@@ -87,6 +87,11 @@ class XHtml extends StatelessWidget {
         ),
         fontSize: FontSize(fontSize, Unit.px),
       ),
+      "ul": Style(
+        margin: Margins.only(left: 4),
+        padding: HtmlPaddings.only(left: 12),
+      ),
+      "li": Style(margin: Margins.only(left: 4), padding: HtmlPaddings.zero),
     };
     Map<String, Style> mergedStyle;
     if (style.isNotEmpty) {
