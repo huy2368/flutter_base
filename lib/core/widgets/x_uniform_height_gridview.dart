@@ -223,7 +223,6 @@ class _XUniformHeightGridViewState extends State<XUniformHeightGridView> {
           return Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (widget.forceRatio) offstageChild,
               if (_effectiveCrossAxisCount == 1 && !widget.forceRatio)
                 Column(
                   spacing: widget.mainAxisSpacing,
@@ -250,7 +249,9 @@ class _XUniformHeightGridViewState extends State<XUniformHeightGridView> {
                   itemBuilder: (context, index) {
                     return widget.children[index];
                   },
-                ),
+                )
+              else if (widget.forceRatio)
+                offstageChild,
             ],
           );
         }

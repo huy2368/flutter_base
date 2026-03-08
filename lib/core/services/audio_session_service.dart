@@ -58,7 +58,7 @@ class AudioSessionService {
               AVAudioSessionCategoryOptions.allowAirPlay |
               AVAudioSessionCategoryOptions.mixWithOthers |
               AVAudioSessionCategoryOptions.defaultToSpeaker,
-          avAudioSessionMode: AVAudioSessionMode.videoRecording,
+          avAudioSessionMode: AVAudioSessionMode.defaultMode,
           avAudioSessionRouteSharingPolicy:
               AVAudioSessionRouteSharingPolicy.defaultPolicy,
           avAudioSessionSetActiveOptions: AVAudioSessionSetActiveOptions.none,
@@ -67,9 +67,8 @@ class AudioSessionService {
             flags: AndroidAudioFlags.none,
             usage: AndroidAudioUsage.media,
           ),
-          androidAudioFocusGainType:
-              AndroidAudioFocusGainType.gainTransientMayDuck,
-          androidWillPauseWhenDucked: false,
+          androidAudioFocusGainType: AndroidAudioFocusGainType.gainTransient,
+          androidWillPauseWhenDucked: true,
         ),
       );
       _handleInterruptions(_session!);
@@ -130,12 +129,14 @@ class AudioSessionService {
         print('AudioSessionService: Configuring for speaker...');
       }
 
-      // For iOS, we can override the output port
+      // For iOS, route selection is handled by the system. We avoid using
+      // AVAudioSessionCategoryOption.defaultToSpeaker here because it is only
+      // valid for the playAndRecord category and will cause OSStatus -50 when
+      // combined with the playback category.
       await _session!.configure(
         const AudioSessionConfiguration(
           avAudioSessionCategory: AVAudioSessionCategory.playback,
-          avAudioSessionCategoryOptions:
-              AVAudioSessionCategoryOptions.defaultToSpeaker,
+          avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.none,
           avAudioSessionMode: AVAudioSessionMode.defaultMode,
           avAudioSessionRouteSharingPolicy:
               AVAudioSessionRouteSharingPolicy.defaultPolicy,
@@ -145,9 +146,8 @@ class AudioSessionService {
             flags: AndroidAudioFlags.none,
             usage: AndroidAudioUsage.media,
           ),
-          androidAudioFocusGainType:
-              AndroidAudioFocusGainType.gainTransientMayDuck,
-          androidWillPauseWhenDucked: false,
+          androidAudioFocusGainType: AndroidAudioFocusGainType.gainTransient,
+          androidWillPauseWhenDucked: true,
         ),
       );
       _handleInterruptions(_session!);
@@ -192,9 +192,8 @@ class AudioSessionService {
             flags: AndroidAudioFlags.none,
             usage: AndroidAudioUsage.media,
           ),
-          androidAudioFocusGainType:
-              AndroidAudioFocusGainType.gainTransientMayDuck,
-          androidWillPauseWhenDucked: false,
+          androidAudioFocusGainType: AndroidAudioFocusGainType.gainTransient,
+          androidWillPauseWhenDucked: true,
         ),
       );
       _handleInterruptions(_session!);
@@ -241,9 +240,8 @@ class AudioSessionService {
             flags: AndroidAudioFlags.none,
             usage: AndroidAudioUsage.media,
           ),
-          androidAudioFocusGainType:
-              AndroidAudioFocusGainType.gainTransientMayDuck,
-          androidWillPauseWhenDucked: false,
+          androidAudioFocusGainType: AndroidAudioFocusGainType.gainTransient,
+          androidWillPauseWhenDucked: true,
         ),
       );
       _handleInterruptions(_session!);
@@ -310,6 +308,7 @@ class AudioSessionService {
       if (event.begin) {
         switch (event.type) {
           case AudioInterruptionType.duck:
+            XLog.l('Audio interruption duck');
             if (audioSession.androidAudioAttributes!.usage ==
                 AndroidAudioUsage.game) {
               audioPlayer.setVolume(audioPlayer.volume / 2);
@@ -318,6 +317,7 @@ class AudioSessionService {
             break;
           case AudioInterruptionType.pause:
           case AudioInterruptionType.unknown:
+            XLog.l('Audio interruption unknown');
             if (audioPlayer.playing) {
               audioPlayer.pause();
               playInterrupted = true;
